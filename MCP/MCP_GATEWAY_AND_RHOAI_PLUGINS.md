@@ -4,10 +4,10 @@ This document records conclusions from comparing **evalhub-mcp** with the contri
 
 ## Summary
 
-| Integration model | Can evalhub-mcp use it? | Recommendation |
-|-------------------|------------------------|----------------|
-| **rhoai-mcp domain/composite plugin** (PR #29) | No, not without a full reimplementation | Do not pursue unless eval-hub tools must live inside the RHOAI monolith |
-| **MCP Gateway** (federated MCP servers on OpenShift) | Yes — natural fit | Prefer this for enterprise agent access with auth, federation, and governance |
+| Integration model                                    | Can evalhub-mcp use it?                 | Recommendation                                                                |
+| ---------------------------------------------------- | --------------------------------------- | ----------------------------------------------------------------------------- |
+| **rhoai-mcp domain/composite plugin** (PR #29)       | No, not without a full reimplementation | Do not pursue unless eval-hub tools must live inside the RHOAI monolith       |
+| **MCP Gateway** (federated MCP servers on OpenShift) | Yes — natural fit                       | Prefer this for enterprise agent access with auth, federation, and governance |
 
 **evalhub-mcp should be deployed and registered as its own MCP server behind MCP Gateway**, not embedded as a Python domain plugin inside rhoai-mcp.
 
@@ -33,7 +33,7 @@ Domain plugins are **in-process Python modules** that extend a single FastMCP se
 evalhub-mcp is a **standalone Go MCP server** (`cmd/evalhub_mcp`, `internal/evalhub_mcp/server`):
 
 | Aspect | evalhub-mcp |
-|--------|-------------|
+| ------ | ----------- |
 | Runtime | Go, [Model Context Protocol Go SDK](https://github.com/modelcontextprotocol/go-sdk) |
 | Backend | eval-hub **REST API** via `pkg/evalhubclient` |
 | Transports | `stdio` (local), `http` (Streamable HTTP), `http-sse` (legacy) |
@@ -130,6 +130,6 @@ evalhub-mcp could adopt a **plugin-style registry in Go** (register tools/resour
 
 ## Document history
 
-| Date | Notes |
-|------|--------|
+| Date       | Notes                                                                  |
+| ---------- | ---------------------------------------------------------------------- |
 | 2026-05-29 | Initial conclusions (evalhub-mcp vs. PR #29 blueprint vs. MCP Gateway) |
