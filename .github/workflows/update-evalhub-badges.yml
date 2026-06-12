@@ -34,6 +34,12 @@ jobs:
                       "https://evalhub-prabhu.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com/api/v1/health"
                   ),
               },
+              {
+                  "name": "evalhub-julian:julian-cluster",
+                  "health_url": (
+                      "https://evalhub-julian.apps.rosa.julian-cluster.vl4b.p3.openshiftapps.com/api/v1/health"
+                  ),
+              },
           ]
 
           badge_lines = []
