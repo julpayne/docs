@@ -15,11 +15,14 @@
 >Account: iaps-rhods-odh-dev (585132637328)
 >
 > - 585132637328-rhoai-dev
->
->Account: qe-rhods-general (966199772278)
->
-> - 966199772278-rhoai-dev
 
 ### OCM account
 
-TBD.
+> Username: `julpayne+rhaoiaccount`
+
+### rh-aws-saml-login
+
+```shell
+kdestroy -A ; kinit ppadashe
+rh-aws-saml-login
+```

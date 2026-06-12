@@ -1,0 +1,66 @@
+name: Update MLflow badge
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update badge JSON files
+        run: |
+          pip install pyyaml --quiet
+          python3 <<'PY'
+          import json
+          import urllib.request
+          from pathlib import Path
+
+          import yaml
+
+          branches = ["rhoai-3.4", "rhoai-3.5-ea.1", "rhoai-3.5-ea.2"]
+          badges_dir = Path("badges")
+          badges_dir.mkdir(exist_ok=True)
+
+          for branch in branches:
+              url = (
+                  "https://raw.githubusercontent.com/red-hat-data-services/mlflow-operator/"
+                  f"{branch}/config/component_metadata.yaml"
+              )
+              with urllib.request.urlopen(url) as response:
+                  data = yaml.safe_load(response.read().decode())
+
+              version = next(
+                  release["version"]
+                  for release in data["releases"]
+                  if release["name"] == "MLflow"
+              )
+
+              badge = {
+                  "schemaVersion": 1,
+                  "label": branch,
+                  "message": version,
+                  "color": "0194E2",
+              }
+              badge_path = badges_dir / f"mlflow-{branch}.json"
+              badge_path.write_text(json.dumps(badge, indent=2) + "\n")
+              print(f"{branch}: {version}")
+          PY
+
+      - name: Commit and push if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add badges/mlflow-*.json
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update MLflow version badges"
+            git push
+          fi
