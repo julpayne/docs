@@ -2,9 +2,7 @@
 
 ## EvalHub cluster versions
 
-<!-- evalhub-badges:start -->
-[![evalhub-prabhu:prabhu-comhub](https://img.shields.io/badge/evalhub--prabhu:prabhu--comhub-0.4.3-007ACC)](https://evalhub-prabhu.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com/api/v1/health)
-<!-- evalhub-badges:end -->
+[![evalhub-prabhu:prabhu-comhub](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fevalhub-prabhu.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com%2Fapi%2Fv1%2Fhealth&query=%24.build&label=evalhub--prabhu%3Aprabhu--comhub&color=007ACC)](https://evalhub-prabhu.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com/api/v1/health)
 
 ## MLFlow versions for rhoai releases
 
