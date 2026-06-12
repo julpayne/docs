@@ -1,5 +1,11 @@
 # Various documentation for reference
 
+## EvalHub cluster versions
+
+<!-- evalhub-badges:start -->
+[![prabhu-comhub](https://img.shields.io/badge/prabhu--comhub-0.4.3-007ACC)](https://evalhub-prabhu.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com/api/v1/health)
+<!-- evalhub-badges:end -->
+
 ## MLFlow versions for rhoai releases
 
 <!-- mlflow-badges:start -->
