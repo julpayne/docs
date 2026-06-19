@@ -2,7 +2,7 @@
 
 - <https://console.redhat.com/openshift/overview>
 
-## Persoanl ROSA cluster
+## Personal ROSA cluster
 
 - <https://docs.google.com/document/d/1DQgZwj0GjCASfolFeAMXQQ1ZFRvFUp_4p1ZI_GDE42c/edit?tab=t.0>
 
