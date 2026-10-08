@@ -29,7 +29,7 @@ jobs:
 
           import yaml
 
-          branches = ["rhoai-3.4", "rhoai-3.5-ea.1", "rhoai-3.5-ea.2"]
+          branches = ["rhoai-3.4", "rhoai-3.5-ea.1", "rhoai-3.5-ea.2", "rhoai-3.6-ea.1", "rhoai-3.6-ea.2", "rhoai-3.6"]
           badge_lines = []
 
           for branch in branches:
