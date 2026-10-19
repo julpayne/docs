@@ -1,0 +1,6 @@
+FROM registry.access.redhat.com/ubi9/python-312:latest
+WORKDIR /app
+COPY support.py fixtures.json ./
+ENV PYTHONUNBUFFERED=1
+USER 1001
+ENTRYPOINT ["python3", "/app/support.py"]

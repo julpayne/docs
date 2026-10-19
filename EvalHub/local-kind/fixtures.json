@@ -1,0 +1,7 @@
+[
+  {"prompt": "Reply with only the word Paris: What is the capital of France?", "answer": "Paris"},
+  {"prompt": "Reply with only the number: What is 2 + 2?", "answer": "4"},
+  {"prompt": "Reply with only the word blue: What color is a clear daytime sky?", "answer": "blue"},
+  {"prompt": "Reply with only the word Monday: What day follows Sunday?", "answer": "Monday"},
+  {"prompt": "Reply with only the word water: What is H2O commonly called?", "answer": "water"}
+]

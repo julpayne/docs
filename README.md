@@ -4,6 +4,8 @@
 
 [Local kind testing environment plan](EvalHub/local-kind-testing-plan.md) — ARM64 Mac setup with mock and external OpenAI-compatible LLM modes.
 
+[Local kind build and deployment scripts](EvalHub/local-kind/README.md) — Podman image builds/loading, scoped deployment, smoke checks and cleanup.
+
 ## EvalHub cluster versions
 
 [![evalhub-prabhu:prabhu-comhub](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fevalhub-prabhu.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com%2Fapi%2Fv1%2Fhealth&query=%24.build&label=evalhub-prabhu%3Aprabhu-comhub&color=007ACC)](https://evalhub-prabhu.apps.rosa.prabhu-comhub.xqmp.p3.openshiftapps.com/api/v1/health)
