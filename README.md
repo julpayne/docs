@@ -3,7 +3,7 @@
 ## EvalHub build and promotion flow
 
 [Upstream PRs to ODH images and staged RHOAI
-installers](EvalHub/pr-to-installer-build-flow.md) — separate service, operator,
+installers](EvalHub/pr-to-installer/pr-to-installer-build-flow.md) — separate service, operator,
 SDK and contrib paths, build gates, source evidence and open handoff questions.
 
 ## EvalHub local testing

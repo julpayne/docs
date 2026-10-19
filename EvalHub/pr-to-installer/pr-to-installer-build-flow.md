@@ -24,10 +24,10 @@ list no required status checks; configured tests and operational verification
 are distinguished from enforced merge rules below. No builds, merges or
 promotions were triggered during this research.
 
-- [Full SVG diagram](pr-to-installer/pr-to-installer.svg), with source links
+- [Full SVG diagram](pr-to-installer.svg), with source links
   embedded in nodes.
-- [Editable full Mermaid source](pr-to-installer/pr-to-installer.mmd).
-- [Structured evidence](pr-to-installer/evidence.json), including commit-pinned
+- [Editable full Mermaid source](pr-to-installer.mmd).
+- [Structured evidence](evidence.json), including commit-pinned
   source links, diagram nodes, gate descriptions and the observed EvalHub, SDK
   and contrib main branch rules.
 
@@ -1082,7 +1082,7 @@ identified.
 ## Full diagram snapshot
 
 ![PR to ODH images and staged RHOAI installer
-gates](pr-to-installer/pr-to-installer.svg)
+gates](pr-to-installer.svg)
 
 [eval-rules]: https://api.github.com/repos/eval-hub/eval-hub/rules/branches/main
 [eval-ci]: https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/ci.yml
