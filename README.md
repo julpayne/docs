@@ -2,11 +2,14 @@
 
 ## EvalHub build and promotion flow
 
-[Upstream PRs to ODH images and staged RHOAI installers](EvalHub/pr-to-installer-build-flow.md) — separate service, operator, SDK and contrib paths, build gates, source evidence and open handoff questions.
+[Upstream PRs to ODH images and staged RHOAI
+installers](EvalHub/pr-to-installer-build-flow.md) — separate service, operator,
+SDK and contrib paths, build gates, source evidence and open handoff questions.
 
 ## EvalHub local testing
 
-[Local kind testing environment plan](EvalHub/local-kind-testing-plan.md) — ARM64 Mac setup with mock and external OpenAI-compatible LLM modes.
+[Local kind testing environment plan](EvalHub/local-kind-testing-plan.md) —
+ARM64 Mac setup with mock and external OpenAI-compatible LLM modes.
 
 ## EvalHub cluster versions
 
