@@ -4,6 +4,11 @@ Date: 16 October 2026
 
 Status: Implementation plan; the environment has not been deployed.
 
+Build/deployment scripts, a happy-path smoke runner, and an upstream `@cluster` Godog runner are available
+in [local-kind/](local-kind/README.md). These implement the handcrafted core environment and select all
+upstream cluster scenarios; the regression matrix, required addons and operator/security parity below
+remain planned work. Image builds and live evaluation acceptance still need to be run.
+
 Run the EvalHub API, real evaluation framework, native sidecar, and Kubernetes Jobs on the existing local kind cluster. Use the same five-sample Inspect task in two modes: deterministic responses from an in-cluster OpenAI-compatible mock, or calls to a configurable external OpenAI-compatible LLM endpoint.
 
 ## Existing environment
@@ -12,7 +17,7 @@ Read-only checks on 16 October 2026 confirmed:
 
 - Mac host and kind node architecture: ARM64.
 - Kubernetes context: `kind-kind`; cluster name: `kind`.
-- Kubernetes API endpoint: `https://127.0.0.1:60153`.
+- Kubernetes API endpoint: discover the current loopback HTTPS endpoint with `kubectl cluster-info --context kind-kind`.
 - One Ready control-plane node, running Kubernetes `v1.37.0`.
 - Default StorageClass: `standard`, using the local-path provisioner.
 - Only system deployments were present when inspected.
@@ -120,7 +125,7 @@ External mode:
 
 All required containers start on the existing kind node.
 
-1. Pin every operation to context kind-kind and cluster name kind. Verify its API endpoint remains https://127.0.0.1:60153; stop on a mismatch. Reuse this cluster and its standard StorageClass.
+1. Pin every operation to context kind-kind and cluster name kind. Discover the current API endpoint and port using `kubectl cluster-info --context kind-kind`; validate that it is a loopback HTTPS endpoint and that its port matches the selected Podman kind node. Reuse this cluster and its standard StorageClass.
 2. Use the existing Podman setup. Confirm which Podman connection owns the kind node and build/load images through that same engine. Prefer OCI image archives plus kind load image-archive, which avoids a local registry and Docker dependency.
 3. Build the repository Containerfile for linux/arm64 with TARGETARCH=arm64 explicitly supplied. The resulting image already contains API, sidecar, init, and MCP binaries. Select each binary with its container command.
 4. Build or verify an ARM64 Inspect adapter image from eval-hub-contrib; bake in the custom task and its five sample fixtures. Inspect is the first real framework; do not start with LM Harness tokenizers, large datasets, or GPU inference.
