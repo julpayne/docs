@@ -5,7 +5,7 @@ Date: 16 October 2026
 Status: Implementation plan; the environment has not been deployed.
 
 Build/deployment scripts, a happy-path smoke runner, and an upstream `@cluster` Godog runner are available
-in [local-kind/](local-kind/README.md). These implement the handcrafted core environment and select all
+in [local-kind/](README.md). These implement the handcrafted core environment and select all
 upstream cluster scenarios; the regression matrix, required addons and operator/security parity below
 remain planned work. Image builds and live evaluation acceptance still need to be run.
 

@@ -1,6 +1,6 @@
 # EvalHub on local kind
 
-Scripts for the build and deployment portion of the [local testing plan](../local-kind-testing-plan.md).
+Scripts for the build and deployment portion of the [local testing plan](local-kind-testing-plan.md).
 They reuse the existing ARM64 `kind` cluster and Podman engine. Source checkouts stay unchanged;
 all generated files are under ignored `bin/`. Python 3.10+, Podman, kind, kubectl, git and make are required.
 The Godog stage also requires host Go (with the toolchain required by `go.mod`) and `oc`, which the
