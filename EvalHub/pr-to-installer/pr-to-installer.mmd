@@ -1,5 +1,14 @@
 flowchart TB
-  %% As of 2026-10-19. Configuration evidence; open questions are intentional.
+  %% As of 2026-10-19. Four entry paths; configuration evidence and unresolved handoffs.
+  sdk_pr["SDK change → upstream PR<br/>eval-hub/eval-hub-sdk · models / client / adapter / CLI"]
+  sdk_gate["S1 · SDK review and configured CI<br/>Effective main gate: PR + 1 approval; no required status checks<br/>Unit Python 3.12–3.14, lint/type, pre-commit, commitlint, Trivy"]
+  sdk_publish["S2 · Publish and verify the SDK package<br/>main push → TestPyPI dev build; published release → PyPI<br/>SCM-derived version; OIDC environments; approval policy? Q7"]
+  sdk_uptake["S3 · Update every affected SDK consumer<br/>Contrib PR: requirements + constraints / lock + adapter migration<br/>Verify installed SDK version; publishing alone does not rebuild"]
+  contrib_pr["Contrib change → adapter PR<br/>eval-hub/eval-hub-contrib · direct change OR SDK consumer bump"]
+  contrib_gate["C1 · Contrib review and configured CI<br/>Effective main gate: 1 approval + squash; no required status checks<br/>Path-specific tests; new-provider YAML; commitlint / security"]
+  contrib_build["C2 · Build and push the selected adapter images<br/>adapters/** push to main or v* branch; manual rebuild available<br/>quay.io/evalhub/community-<adapter>:<SHA> + latest / branch<br/>Verify push, digest, actual SDK and supported architecture"]
+  provider_config["P1 · Reconcile provider definitions when changed<br/>Contrib provider.yaml → EvalHub config/providers PR (G1)<br/>Image check skips new providers on PRs; drift check is post-merge<br/>Sync operator ConfigMaps; update image variables / resources<br/>Then join service and operator source promotion paths"]
+  provider_select["P2 · Select adapter references and sync module manifests<br/>Operator params.env: base, ODH and RHOAI overlays<br/>Inspect: base latest; ODH / RHOAI v0.6.12 (not latest)<br/>Copy generated config into module manifests; operator PR → G2<br/>RHOAI branch mapping / rebuild or mirror / policy? Q8"]
   eval_pr["EvalHub PR → upstream main<br/>eval-hub/eval-hub"]
   operator_pr["TrustyAI operator PR → upstream main<br/>trustyai-explainability/trustyai-service-operator"]
   eval_gate["G1 · Required upstream merge gate<br/>1 approval + CODEOWNERS + latest-push approval<br/>Required checks + resolved review threads; up-to-date branch"]
@@ -21,16 +30,27 @@ flowchart TB
   rh_catalog["G13 · Bundle digest → catalog processing → FBC build<br/>catalog/catalog-patch.yaml nudge; process catalog content<br/>Refresh PCC + select bundle snapshot; build FBC fragment<br/>Policy / integration-test enforcement remains Q5."]
   rh_stage["G14 · Promote selected FBC to stage ? Q5–Q6<br/>Push To Stage: workflow_dispatch; select FBC / latest nightly<br/>Validate signed-image presence + catalog/PCC data<br/>QE sign-off, release-policy binding and caller / cadence: OPEN"]
   stage_output["QE-installable staged catalog<br/>Built stage catalog → OLM bundle → installer / module / workloads"]
+  sdk_pr --> sdk_gate
+  sdk_gate --> sdk_publish
+  sdk_publish --> sdk_uptake
+  sdk_uptake --> contrib_pr
+  contrib_pr --> contrib_gate
+  contrib_gate --> contrib_build
+  contrib_build -->|if provider definitions changed| provider_config
+  contrib_build --> provider_select
+  provider_config --> eval_pr
+  provider_config --> provider_select
+  provider_select --> operator_pr
   eval_pr --> eval_gate
   eval_gate --> eval_fork
   eval_fork --> eval_promote
   operator_pr --> operator_gate
   operator_gate --> operator_fork
   operator_fork --> operator_promote
-  eval_promote --> odh_images
-  operator_promote --> odh_images
-  eval_promote -.-> rh_sync
-  operator_promote -.-> rh_sync
+  eval_promote -->|stable builds| odh_images
+  operator_promote -->|workload stable / module main| odh_images
+  eval_promote -.->|downstream source handoff| rh_sync
+  operator_promote -.->|downstream source handoff| rh_sync
   odh_images --> odh_select
   odh_select --> odh_installer
   odh_installer --> odh_bundle
@@ -42,6 +62,15 @@ flowchart TB
   rh_bundle --> rh_catalog
   rh_catalog -.-> rh_stage
   rh_stage -.-> stage_output
+  click sdk_pr "https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/pyproject.toml" "Source" _blank
+  click sdk_gate "https://api.github.com/repos/eval-hub/eval-hub-sdk/rules/branches/main" "Source" _blank
+  click sdk_publish "https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/.github/workflows/publish-testpypi.yml" "Source" _blank
+  click sdk_uptake "https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/adapters/inspect/requirements.txt" "Source" _blank
+  click contrib_pr "https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/CONTRIBUTING.md" "Source" _blank
+  click contrib_gate "https://api.github.com/repos/eval-hub/eval-hub-contrib/rules/branches/main" "Source" _blank
+  click contrib_build "https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/build-images.yml" "Source" _blank
+  click provider_config "https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/adapters/inspect/provider.yaml" "Source" _blank
+  click provider_select "https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/config/base/params.env" "Source" _blank
   click eval_pr "https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/ci.yml" "Source" _blank
   click operator_pr "https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/.github/workflows/controller-tests.yaml" "Source" _blank
   click eval_gate "https://api.github.com/repos/eval-hub/eval-hub/rules/branches/main" "Source" _blank

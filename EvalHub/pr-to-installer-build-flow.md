@@ -2,13 +2,15 @@
 
 Research date: **19 October 2026**. Scope: **current ODH / next RHOAI development builds**, through a **QE-installable staged catalog**. The inspected RHOAI release-branch example is `rhoai-3.6`; EA branches have different freeze controls.
 
+This guide follows four entry points: service PRs, operator PRs, [SDK updates](#4-sdk-update-path) and [contrib adapter changes](#5-contrib-change-path). SDK and contrib changes have their own package/build and consumer-selection gates before joining component promotion.
+
 PRs in [eval-hub/eval-hub](https://github.com/eval-hub/eval-hub) and [trustyai-explainability/trustyai-service-operator](https://github.com/trustyai-explainability/trustyai-service-operator) pass through source synchronization, separate component builds, installer image selection, bundle generation and catalog promotion. An upstream merge or an image appearing in Quay does not establish that a staged installer contains it.
 
-**Reading the diagrams:** diamonds represent gates or selection steps; dashed arrows and `?` identify unverified handoffs or enforcement. A workflow definition establishes configured behavior. Only the EvalHub upstream merge rules were verified as effective required checks; other test requirements remain qualified below. No builds, merges or promotions were triggered during this research.
+**Reading the diagrams:** diamonds represent gates or selection steps; dashed arrows and `?` identify unverified handoffs or enforcement. A workflow definition establishes configured behavior. EvalHub upstream required checks were verified. SDK and contrib effective `main` rules require one approval but list no required status checks; configured tests and operational verification are distinguished from enforced merge rules below. No builds, merges or promotions were triggered during this research.
 
 - [Full SVG diagram](pr-to-installer/pr-to-installer.svg), with source links embedded in nodes.
 - [Editable full Mermaid source](pr-to-installer/pr-to-installer.mmd).
-- [Structured evidence](pr-to-installer/evidence.json), including commit-pinned source links, diagram nodes, gate descriptions and the observed EvalHub main branch rules.
+- [Structured evidence](pr-to-installer/evidence.json), including commit-pinned source links, diagram nodes, gate descriptions and the observed EvalHub, SDK and contrib main branch rules.
 
 ## 1. Upstream PRs into ODH component images
 
@@ -90,6 +92,57 @@ The [operator nudge workflow][operator-nudge] checks the bot, file count and tit
 The [bundle nudge workflow][rh-bundle-nudge] handles eligible bot PRs. [Bundle processing][rh-bundle-process] then generates content for the [bundle build][rh-bundle-build]. The bundle nudges catalog input; [FBC processing][rh-fbc-process] refreshes PCC and selects bundle snapshots before the [FBC build][rh-fbc-build]. **The direct bundle and FBC build triggers exclude patch-only pushes.** A nudge must pass through its processor and produce qualifying content before that build occurs.
 
 [Push To Stage][stage] is a `workflow_dispatch` workflow that accepts a chosen FBC image or `LATEST_NIGHTLY`, checks signed-image presence, validates/regenerates PCC, patches the stage catalog and monitors catalog builds. A signature-presence check does not establish a full Enterprise Contract verdict. The inspected [integration-test scenario][ec-scenario] still names `rhoai-v2-17`, so it cannot prove the live `rhoai-v3-6` policy binding. Required QE sign-off remains Q5-Q6.
+
+## 4. SDK update path
+
+A Python SDK release reaches direct client/CLI users through package installation. Adapter-facing SDK changes must also pass the contrib path in section 5; they do not automatically change the Go EvalHub service image.
+
+```mermaid
+flowchart TB
+  SPR["eval-hub/eval-hub-sdk PR"] --> S1{"S1: review + applicable CI<br/>1 approval enforced; no required status checks"}
+  S1 --> MAIN["Merged SDK main"]
+  MAIN --> TEST["main push: TestPyPI dev package"]
+  MAIN --> S2{"S2: choose release/tag; publish GitHub release<br/>PyPI build/upload; environment approvals? Q7"}
+  S2 --> PYPI["Verify intended SDK version on PyPI"]
+  PYPI --> CLIENT["Direct client / CLI: install and validate<br/>against the target service"]
+  PYPI --> S3{"S3: update affected adapter dependencies<br/>requirements + constraints/lock; migrate/test"}
+  S3 --> CONTRIB["Contrib consumer bump PR → C1–C2 → P1/P2"]
+```
+
+1. **S1 — Review and CI.** Run the SDK unit matrix (Python 3.12/3.13/3.14), Ruff, mypy, pre-commit, commitlint and security checks relevant to the change. The observed [effective main rules][sdk-rules] enforce a PR and **one approval**, with no required status-check rule returned; classic protection returned 404. The [E2E job][sdk-tests] explicitly uses `continue-on-error: true`. Treat it as optional CI and arrange targeted service/sidecar integration validation for changed contracts. See [pre-commit][sdk-precommit], [commitlint][sdk-commitlint] and [Trivy][sdk-trivy] configuration.
+2. **S2 — Publish a consumable version.** A merge to `main` triggers [TestPyPI publication][sdk-testpypi]. Production [PyPI publication][sdk-pypi] requires a **published GitHub release**, builds wheel/sdist from that release context and uses the `pypi` OIDC environment. Version is [SCM-derived][sdk-package]; choose the tag containing the change and verify the uploaded version is installable from the intended index. The publish workflows do not depend on the Tests workflow. Environment reviewers and release/tag authorization remain **Q7**; TestPyPI publication alone does not complete this gate.
+3. **S3 — Update each affected consumer.** For adapter changes, open contrib PRs to bump SDK requirements and regenerate constraints/lock files, adapt interfaces and verify compatibility with the target service/sidecar. Inspect illustrates why both files matter: [requirements][inspect-requirements] allows `eval-hub-sdk[adapter]~=1.0.5`, but [constraints][inspect-constraints] fixes `eval-hub-sdk==1.0.5`; its [Containerfile][inspect-container] applies both. Follow its [dependency regeneration instructions][inspect-dependencies]. The [Inspect unit workflow][contrib-inspect-tests] installs the SDK requirement without the image constraints, so a passing unit job alone does not prove which SDK the image contains.
+4. **Continue through C1–C2 and P1/P2 below.** An SDK release does not trigger the contrib image publisher. Rebuild and select every affected adapter; reconcile provider definitions only when they change. For a direct client/CLI-only update, install the SDK and validate it against the deployed service; no adapter or installer update is inherently required. The [Go service Containerfile][eval-container] does not install this Python package.
+
+**Completion evidence:** SDK merge SHA → published release/tag → package version and index → consumer dependency commit → actual SDK version in the rebuilt adapter image → selected adapter digest. An unreleased source checkout or a successful TestPyPI upload is not evidence that production adapter users received the change.
+
+## 5. Contrib change path
+
+Start here for adapter implementation, framework/dependency, Containerfile or provider changes, including an SDK consumer bump from section 4. Adapter images are separate dependencies of evaluation Jobs.
+
+```mermaid
+flowchart TB
+  CPR["eval-hub/eval-hub-contrib PR<br/>direct adapter change OR SDK consumer bump"] --> C1{"C1: 1 approval + squash merge<br/>applicable tests / YAML / security jobs"}
+  C1 --> C2{"C2: adapters/** push on main or v* branch<br/>or explicit manual adapter build"}
+  C2 --> IMAGE["Push community adapter image<br/>SHA tag + latest or branch channel; record digest"]
+  IMAGE --> CHANGE{"Provider definition changed?"}
+  CHANGE -->|yes| P1["P1: reconcile EvalHub config/providers PR<br/>G1 merge gate; validate image references"]
+  P1 --> CM["Sync TrustyAI provider ConfigMaps<br/>add image variables/resources for new providers"]
+  CHANGE -->|no| P2
+  CM --> P2{"P2: select adapter reference in operator params<br/>base + ODH/RHOAI overlays; sync module manifests"}
+  P1 --> SERVICE["If service config changed: G3/G5 → G8<br/>downstream source handoff remains G7 / Q1"]
+  P2 --> OPERATOR["Operator PR: G2 → G4/G6 → G8<br/>RHOAI G7/G9–G14; adapter selection policy? Q8"]
+  OPERATOR --> VERIFY["Installed provider config → Job image digest<br/>verify SDK, callbacks/results and target architecture"]
+```
+
+1. **C1 — Prepare, review and test the adapter PR.** Follow [CONTRIBUTING][contrib-contributing]: adapter code, Containerfile, requirements/constraints, `provider.yaml`, tests, README and Makefile targets as applicable. The observed [main rules][contrib-rules] require **one approval and squash merging**, with no required status-check rule returned; classic protection returned 404. Adapter tests are path-specific (for example [Inspect][contrib-inspect-tests]). [Commitlint][contrib-commitlint], [CodeQL][contrib-security] and [Trivy][contrib-trivy] are configured; Trivy has a HIGH/CRITICAL failure step. These jobs are not established as required merge checks. [Provider validation][contrib-validate] runs on `adapters/**` PRs into `main`, but its [script][contrib-validator] only checks **new adapter directories** for a present, parseable `provider.yaml`; it does not enforce the complete schema or validate existing adapters.
+2. **C2 — Build and publish the affected images.** The [publisher][contrib-build] runs after `adapters/**` pushes to `main` or **`v*` branches**, or on manual dispatch. It detects adapters from the last commit, builds their Containerfiles and pushes `quay.io/evalhub/community-<adapter>:<commit-SHA>` plus `latest` on main or the branch name on release branches. A tag push is not this workflow's configured trigger. Root-only/workflow-only changes and a new SDK release do not automatically rebuild images; manually dispatch with the adapter name when needed. The [manual all-images workflow][contrib-build-all] uses an explicit matrix, so check coverage for new adapters. ToolEval also builds `toolbench-server`; `clear` publishes as `community-ibm-clear`. [RULER has an overlapping publisher][contrib-ruler] targeting the same tags (Q8). These publishers do not wait on test/security workflow results. Verify successful push, resolved digest, actual installed SDK/dependencies and target architecture; the configured Docker build has no explicit multi-platform matrix.
+3. **P1 — Reconcile provider definitions if changed.** Contrib's [provider.yaml][inspect-contrib-provider] and EvalHub's [config/providers YAML][inspect-service-provider] are distinct files; the inspected publisher does not synchronize them. Open a service PR for changed benchmark metadata/runtime fields and pass **G1**. Its [image-existence check][provider-image-check] skips newly added providers on PRs, then checks them on matching main pushes; image existence alone does not prove compatibility. The [ConfigMap drift workflow][config-sync] runs after main pushes, nightly at **02:00 UTC** and manually, rather than on PRs. Its [comparison][config-sync-logic] skips Kustomize image variables, so drift success does not prove the selected image version.
+4. **P2 — Select the image and update operator/module configuration.** In a TrustyAI PR, run [`hack/sync-evalhub-providers.sh <source-ref>`][provider-sync-script] when provider/collection definitions change and review the generated ConfigMaps. Follow the [operator sync guide][provider-sync-guide] for new providers: register image variables in [base kustomization][provider-image-vars], add [base][provider-base-images], [ODH][provider-odh-images] and [RHOAI][provider-rhoai-images] `params.env` entries, and update resources. For an image-only change, check/update the relevant existing selections without requiring an unrelated service config PR. Run [`hack/sync-trustyai-module-manifests.sh`][provider-module-sync] after config changes; it copies the config tree into `trustyai-operator-module/config/manifests-template`. Review both trees before merging through **G2**.
+5. **Join the existing promotion paths.** Service config changes follow **G3/G5**; operator manifests/image selections follow **G4/G6** and installer selection **G8**. For RHOAI, confirm the matching release branch and pass **G7/G9–G14**; **Q1 stays open** for source synchronization. The observed image selection is concrete: base uses `community-inspect:latest`, whereas upstream ODH/RHOAI overlays and the [downstream `rhoai-3.6` overlay][rh-provider-images] select `community-inspect:v0.6.12`. A new `latest` build does not update that pinned channel. Either build the chosen release branch/channel or deliberately update the selected reference; record the immutable digest because branch/channel tags can move. The [downstream provider ConfigMap][rh-inspect-provider] substitutes `$(evalhub-provider-inspect-image)` and its overlay references the community image. A separate RHEL adapter rebuild/nudge, mirroring and release eligibility must be established rather than inferred (**Q8**).
+6. **Verify the installed job.** Treat this as completion evidence for the change, not an already enforced CI requirement: inspect the rendered operator/module provider ConfigMap and resulting Kubernetes Job/Pod image digest; confirm the embedded SDK version, target architecture and service/sidecar callback/result compatibility with an actual evaluation. Provider ConfigMaps are [reconciled by the operator][rh-provider-reconcile]. A successful API submission or a new image in Quay alone does not prove the adapter update reached stage.
+
+**Completion evidence:** contrib merge/selected release commit → image digest and embedded SDK version → provider config commit if changed → selected operator overlay reference and module manifest commit → existing installer/bundle/FBC/stage chain → installed Job image digest and evaluation result. For clients, the SDK package version is sufficient to identify the update; for adapters, retain the whole image-selection chain.
 
 ## Gate details
 
@@ -199,6 +252,56 @@ Evidence: [red-hat-data-services/RHOAI-Build-Config · .github/workflows/push-to
 
 Open: Q5, Q6.
 
+### S1 · SDK review and configured CI
+
+Effective main rules require a PR and one approving review, with no required_status_checks rule returned. Classic branch-protection API returned 404. CODEOWNERS, last-push approval and thread resolution are not required by the observed rules. CI configures unit tests on Python 3.12/3.13/3.14, Ruff, mypy, pre-commit, commitlint and a Trivy HIGH/CRITICAL failure step. E2E has continue-on-error: true. Review and resolve applicable CI before merging as a working practice; these jobs are not established as enforced merge checks.
+
+Evidence: [eval-hub/eval-hub-sdk · effective main rules][sdk-rules], [eval-hub/eval-hub-sdk · .github/workflows/test.yml (main)][sdk-tests], [eval-hub/eval-hub-sdk · .github/workflows/pre-commit.yml (main)][sdk-precommit], [eval-hub/eval-hub-sdk · .github/workflows/commitlint.yml (main)][sdk-commitlint], [eval-hub/eval-hub-sdk · .github/workflows/trivy-scan.yml (main)][sdk-trivy].
+
+### S2 · Publish and verify the SDK package
+
+main pushes build a dev distribution for TestPyPI. A published GitHub release triggers a separate build and upload to PyPI in the pypi environment using OIDC. Version comes from setuptools_scm and Git history/tags. Select the release/tag containing the merged change and verify the intended wheel/sdist is installable from the intended index. Neither publish workflow depends on the Tests workflow. Environment reviewer and tag/release authorization rules were not audited; TestPyPI success alone is not production publication.
+
+Evidence: [eval-hub/eval-hub-sdk · .github/workflows/publish-testpypi.yml (main)][sdk-testpypi], [eval-hub/eval-hub-sdk · .github/workflows/publish-pypi.yml (main)][sdk-pypi], [eval-hub/eval-hub-sdk · pyproject.toml (main)][sdk-package].
+
+Open: Q7.
+
+### S3 · Update every affected SDK consumer
+
+For adapter-facing changes, open a contrib PR for each affected adapter: update SDK requirements and any constraints/lock files together, migrate changed interfaces and exercise callbacks/results against the target service/sidecar. Inspect currently permits eval-hub-sdk[adapter]~=1.0.5 but its constraints pin eval-hub-sdk==1.0.5, and its Containerfile applies both. Regenerate constraints using the adapter README; do not assume a compatible range picks up a new release. Its unit workflow installs the SDK requirement without that constraints file, so verify the built image too. Direct SDK clients/CLI users instead install the published package and validate against their target service. No inspected workflow automatically opens consumer bump PRs or rebuilds adapters on SDK publication.
+
+Evidence: [eval-hub/eval-hub-contrib · adapters/inspect/requirements.txt (main)][inspect-requirements], [eval-hub/eval-hub-contrib · adapters/inspect/constraints.txt (main)][inspect-constraints], [eval-hub/eval-hub-contrib · adapters/inspect/Containerfile (main)][inspect-container], [eval-hub/eval-hub-contrib · adapters/inspect/README.md (main)][inspect-dependencies], [eval-hub/eval-hub-contrib · .github/workflows/test-inspect.yml (main)][contrib-inspect-tests].
+
+Open: Q7.
+
+### C1 · Contrib review and configured CI
+
+Effective main rules require a PR with one approval and allow squash merges only; no required_status_checks rule was returned, and classic branch-protection API returned 404. Run the applicable adapter-specific tests and inspect configured commitlint, CodeQL and Trivy jobs. Trivy has a HIGH/CRITICAL failure step. Provider validation runs for adapters/** PRs into main but its script only checks new adapter directories for provider.yaml existence and parseable YAML: it does not validate the full provider schema or existing directories. Test coverage is workflow/path-specific; a skipped job is not adapter validation.
+
+Evidence: [eval-hub/eval-hub-contrib · effective main rules][contrib-rules], [eval-hub/eval-hub-contrib · .github/workflows/test-inspect.yml (main)][contrib-inspect-tests], [eval-hub/eval-hub-contrib · .github/workflows/validate-provider.yml (main)][contrib-validate], [eval-hub/eval-hub-contrib · .github/scripts/validate_provider.py (main)][contrib-validator], [eval-hub/eval-hub-contrib · .github/workflows/commitlint.yml (main)][contrib-commitlint], [eval-hub/eval-hub-contrib · .github/workflows/security.yml (main)][contrib-security], [eval-hub/eval-hub-contrib · .github/workflows/trivy-scan.yml (main)][contrib-trivy].
+
+### C2 · Build and push the selected adapter images
+
+After merge, build-images.yml detects changed adapters on main or v* branch pushes restricted to adapters/**; it is not a tag-push release trigger. It builds each selected Containerfile and pushes commit-SHA and channel tags (main → latest; otherwise branch name). A root-only/workflow-only change does not trigger this publisher, and SDK publication alone is not a contrib push. Manually dispatch with adapter input when change detection misses the needed rebuild; build-all-images.yml is a separate manual, explicit matrix, not dynamic discovery of every adapter. ToolEval expands to both adapter and toolbench-server images; clear maps to community-ibm-clear. RULER also has a separate publisher targeting the same tags. Quay credentials and a successful build/push are operational gates, but the publisher has no needs dependency on adapter tests or security jobs. The inspected workflow uses an Ubuntu docker build without an explicit multi-platform matrix. Verify digest, installed SDK/dependencies, architecture and runtime compatibility before selection.
+
+Evidence: [eval-hub/eval-hub-contrib · .github/workflows/build-images.yml (main)][contrib-build], [eval-hub/eval-hub-contrib · .github/workflows/build-all-images.yml (main)][contrib-build-all], [eval-hub/eval-hub-contrib · .github/workflows/push-ruler.yml (main)][contrib-ruler], [eval-hub/eval-hub-contrib · adapters/inspect/Containerfile (main)][inspect-container].
+
+Open: Q8.
+
+### P1 · Reconcile provider definitions when changed
+
+If benchmark metadata, runtime fields or provider definitions change, reconcile the contrib provider.yaml into eval-hub/eval-hub config/providers/<id>.yaml in a separate PR and pass G1. The inspected contrib publisher does not copy provider definitions into EvalHub. EvalHub validates referenced images on matching PRs/pushes, but newly added providers are skipped on PRs and checked after merge. Its ConfigMap check runs on main pushes, nightly at 02:00 UTC and manual dispatch, not PRs; it detects drift against upstream TrustyAI and skips Kustomize image variables, so cannot prove the selected image digest. In a TrustyAI PR run hack/sync-evalhub-providers.sh <source-ref>, inspect generated ConfigMaps/kustomization and preserve intentional downstream overrides. For a new provider add the base Kustomize image variable and base/ODH/RHOAI params entries, then sync module manifests. Both service and operator PRs are conditional on the actual change.
+
+Evidence: [eval-hub/eval-hub-contrib · adapters/inspect/provider.yaml (main)][inspect-contrib-provider], [eval-hub/eval-hub · config/providers/inspect.yaml (main)][inspect-service-provider], [eval-hub/eval-hub · .github/workflows/validate-provider-images.yml (main)][provider-image-check], [eval-hub/eval-hub · .github/workflows/check-trustyai-service-operator-configmap-sync.yml (main)][config-sync], [eval-hub/eval-hub · scripts/check_configmap_sync.py (main)][config-sync-logic], [trustyai-explainability/trustyai-service-operator · hack/sync-evalhub-providers.sh (main)][provider-sync-script], [trustyai-explainability/trustyai-service-operator · config/configmaps/evalhub/README.md (main)][provider-sync-guide], [trustyai-explainability/trustyai-service-operator · config/base/kustomization.yaml (main)][provider-image-vars].
+
+### P2 · Select adapter references and sync module manifests
+
+For an adapter-only update, existing provider metadata may remain unchanged, but prove which reference and digest the deployment selects. TrustyAI base params uses community-inspect:latest while upstream ODH/RHOAI overlays and the inspected downstream rhoai-3.6 overlay select community-inspect:v0.6.12. A main/latest build does not update that pinned selection. Build the chosen release branch or deliberately change the selected reference in an operator PR; resolve and record its digest because channel/branch tags are mutable. Update affected params entries, run hack/sync-trustyai-module-manifests.sh to copy the config tree into trustyai-operator-module/config/manifests-template, review both trees, and pass G2 before G4/G6/G8 and G7/G9–G14 as applicable. The observed RHOAI overlay references a community adapter image, so do not assume a separate RHEL adapter rebuild/nudge. Confirm approved release/branch, platform/security eligibility and any mirror/rebuild/relatedImages mapping with maintainers (Q8).
+
+Evidence: [trustyai-explainability/trustyai-service-operator · config/base/params.env (main)][provider-base-images], [trustyai-explainability/trustyai-service-operator · config/overlays/odh/params.env (main)][provider-odh-images], [trustyai-explainability/trustyai-service-operator · config/overlays/rhoai/params.env (main)][provider-rhoai-images], [red-hat-data-services/trustyai-service-operator · config/overlays/rhoai/params.env (rhoai-3.6)][rh-provider-images], [trustyai-explainability/trustyai-service-operator · hack/sync-trustyai-module-manifests.sh (main)][provider-module-sync], [red-hat-data-services/trustyai-service-operator · config/configmaps/evalhub/provider-inspect.yaml (rhoai-3.6)][rh-inspect-provider].
+
+Open: Q8.
+
 ## Open questions
 
 These are gaps in the evidence, not claims that controls are absent. Q1 stays open as requested.
@@ -251,11 +354,27 @@ Suggested owner: **Release engineering / QE**.
 
 Evidence: [red-hat-data-services/RHOAI-Build-Config · .github/workflows/push-to-stage.yaml (rhoai-3.6)][stage], [red-hat-data-services/eval-hub · .github/workflows/post-codefreeze-gatekeeper.yaml (main)][rh-freeze].
 
+### Q7. Who authorizes SDK releases and consumer uptake?
+
+Confirm tag/release ownership, required PyPI environment reviewers and whether successful SDK CI must precede production publication. Identify owners for consumer dependency bump PRs and the supported SDK/service/sidecar compatibility set; the inspected workflows do not automate this handoff.
+
+Suggested owner: **SDK / adapter maintainers**.
+
+Evidence: [eval-hub/eval-hub-sdk · .github/workflows/publish-pypi.yml (main)][sdk-pypi], [eval-hub/eval-hub-sdk · .github/workflows/publish-testpypi.yml (main)][sdk-testpypi], [eval-hub/eval-hub-sdk · .github/workflows/test.yml (main)][sdk-tests], [eval-hub/eval-hub-contrib · adapters/inspect/constraints.txt (main)][inspect-constraints].
+
+### Q8. Which adapter image is approved and installed?
+
+Confirm the contrib release branch/channel, immutable digest, supported architectures and security/QE acceptance for each ODH/RHOAI release. Establish any downstream rebuild/mirror and relatedImages mapping instead of assuming it. Resolve overlapping RULER publishers and verify the manual all-images matrix covers the intended adapters. Prove the selected overlay and module manifests deploy the same tested digest.
+
+Suggested owner: **Adapter / operator maintainers / QE**.
+
+Evidence: [eval-hub/eval-hub-contrib · .github/workflows/build-images.yml (main)][contrib-build], [eval-hub/eval-hub-contrib · .github/workflows/build-all-images.yml (main)][contrib-build-all], [eval-hub/eval-hub-contrib · .github/workflows/push-ruler.yml (main)][contrib-ruler], [trustyai-explainability/trustyai-service-operator · config/overlays/odh/params.env (main)][provider-odh-images], [red-hat-data-services/trustyai-service-operator · config/overlays/rhoai/params.env (rhoai-3.6)][rh-provider-images], [trustyai-explainability/trustyai-service-operator · hack/sync-trustyai-module-manifests.sh (main)][provider-module-sync].
+
 ## How to prove that a particular PR reached stage
 
 Record this chain for each component: upstream merge commit → ODH commit → downstream release commit → component image digest → merged installer nudge → installer digest → bundle digest → FBC digest → staged catalog digest. Compare the installed deployment image and module manifests with that selected set.
 
-Provider adapter images are separate dependencies. The EvalHub API, init, sidecar and MCP binaries share the main service image. The [ConfigMap synchronization workflow][config-sync] checks drift on upstream main pushes, nightly and manually; it does not itself promote ConfigMap updates into the operator.
+For SDK/contrib updates, also record the SDK release/version → contrib dependency and image build commit → adapter digest → operator overlay and module manifest selection → installed Job digest, as detailed in sections 4–5. Provider adapter images are separate dependencies. The EvalHub API, init, sidecar and MCP binaries share the main service image. The [ConfigMap synchronization workflow][config-sync] checks drift on upstream main pushes, nightly and manually; it does not itself promote ConfigMap updates into the operator.
 
 [Early Gate][early-gate] can check whether a set of unmerged PRs composes into an operator, bundle and catalog. Whether its result is mandatory belongs in Q5. Production release authorization is outside this diagram.
 
@@ -312,3 +431,43 @@ Update the diagrams, gate descriptions and structured evidence together when a h
 [ec-scenario]: https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/integration-tests/integration-test.yaml
 [early-gate]: https://github.com/red-hat-data-services/konflux-central/blob/e416e32aab51af0668bcf0362effdf27ab0e16ee/early-gate/docs/README.md
 [config-sync]: https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/check-trustyai-service-operator-configmap-sync.yml
+[sdk-tests]: https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/.github/workflows/test.yml
+[sdk-precommit]: https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/.github/workflows/pre-commit.yml
+[sdk-commitlint]: https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/.github/workflows/commitlint.yml
+[sdk-trivy]: https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/.github/workflows/trivy-scan.yml
+[sdk-pypi]: https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/.github/workflows/publish-pypi.yml
+[sdk-testpypi]: https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/.github/workflows/publish-testpypi.yml
+[sdk-package]: https://github.com/eval-hub/eval-hub-sdk/blob/9ec3856c10c2b6a8e4791971753a2310d477f4fa/pyproject.toml
+[contrib-build]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/build-images.yml
+[contrib-build-all]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/build-all-images.yml
+[contrib-ruler]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/push-ruler.yml
+[contrib-validate]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/validate-provider.yml
+[contrib-validator]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/scripts/validate_provider.py
+[contrib-security]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/security.yml
+[contrib-trivy]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/trivy-scan.yml
+[contrib-commitlint]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/commitlint.yml
+[contrib-inspect-tests]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/.github/workflows/test-inspect.yml
+[inspect-requirements]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/adapters/inspect/requirements.txt
+[inspect-container]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/adapters/inspect/Containerfile
+[inspect-contrib-provider]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/adapters/inspect/provider.yaml
+[contrib-contributing]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/CONTRIBUTING.md
+[provider-image-check]: https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/validate-provider-images.yml
+[config-sync-logic]: https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/scripts/check_configmap_sync.py
+[inspect-service-provider]: https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/config/providers/inspect.yaml
+[eval-container]: https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/Containerfile
+[provider-sync-script]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/hack/sync-evalhub-providers.sh
+[operator-inspect-provider]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/config/configmaps/evalhub/provider-inspect.yaml
+[provider-sync-guide]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/config/configmaps/evalhub/README.md
+[rh-inspect-provider]: https://github.com/red-hat-data-services/trustyai-service-operator/blob/718760309b309fb4c20b99cbee59bd21ada77796/config/configmaps/evalhub/provider-inspect.yaml
+[rh-provider-reconcile]: https://github.com/red-hat-data-services/trustyai-service-operator/blob/718760309b309fb4c20b99cbee59bd21ada77796/controllers/evalhub/configmap.go
+[rh-provider-sync]: https://github.com/red-hat-data-services/trustyai-service-operator/blob/718760309b309fb4c20b99cbee59bd21ada77796/hack/sync-evalhub-providers.sh
+[inspect-constraints]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/adapters/inspect/constraints.txt
+[inspect-dependencies]: https://github.com/eval-hub/eval-hub-contrib/blob/17a4de7ba186b5ed79f5d5d6790ba147de88124d/adapters/inspect/README.md
+[provider-image-vars]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/config/base/kustomization.yaml
+[provider-base-images]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/config/base/params.env
+[provider-odh-images]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/config/overlays/odh/params.env
+[provider-rhoai-images]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/config/overlays/rhoai/params.env
+[provider-module-sync]: https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/hack/sync-trustyai-module-manifests.sh
+[rh-provider-images]: https://github.com/red-hat-data-services/trustyai-service-operator/blob/718760309b309fb4c20b99cbee59bd21ada77796/config/overlays/rhoai/params.env
+[sdk-rules]: https://api.github.com/repos/eval-hub/eval-hub-sdk/rules/branches/main
+[contrib-rules]: https://api.github.com/repos/eval-hub/eval-hub-contrib/rules/branches/main
