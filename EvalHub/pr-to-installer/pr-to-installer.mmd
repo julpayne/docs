@@ -1,0 +1,67 @@
+flowchart TB
+  %% As of 2026-10-19. Configuration evidence; open questions are intentional.
+  eval_pr["EvalHub PR → upstream main<br/>eval-hub/eval-hub"]
+  operator_pr["TrustyAI operator PR → upstream main<br/>trustyai-explainability/trustyai-service-operator"]
+  eval_gate["G1 · Required upstream merge gate<br/>1 approval + CODEOWNERS + latest-push approval<br/>Required checks + resolved review threads; up-to-date branch"]
+  operator_gate["G2 · Upstream CI / merge policy ? Q2<br/>Controller + module smoke / manifest checks; Prow<br/>Which checks and approvals are enforced remains open."]
+  eval_fork["G3 · Sync PR → ODH main<br/>opendatahub-io/eval-hub<br/>Hourly at :23 UTC / manual; conflicts fail; PR merge required"]
+  operator_fork["G4 · Upstream sync PR → ODH main<br/>opendatahub-io/trustyai-service-operator<br/>Pull bot PR: auto-approve / enable auto-merge; cadence ?"]
+  eval_promote["G5 · ODH main → stable sync PR<br/>Push to main / manual creates sync PR<br/>Gate: merge PR; resolve conflicts and destination requirements."]
+  operator_promote["G6 · ODH main → incubation → stable PRs<br/>main push opens incubation PR; incubation push opens stable PR<br/>Module image has a separate main build (Q3)."]
+  odh_images["ODH component image builds<br/>EvalHub stable → quay.io/opendatahub/odh-eval-hub<br/>Workload stable + module main → opendatahub operator images<br/>Tag: odh-stable; Konflux build / scan tasks (policy: Q4–Q5)"]
+  rh_sync["G7 · ODH → Red Hat source promotion ? Q1<br/>red-hat-data-services/{eval-hub, trustyai-service-operator}<br/>Destination builds verified on rhoai-3.6<br/>Source branch / sync bot / cadence / approvals: OPEN"]
+  odh_select["G8 · Select manifests + immutable image digests<br/>Daily 06:00 UTC / manual manifest-update PR<br/>Merge updated SHA / digest pins; eligibility policy ? Q4"]
+  rh_freeze["G9 · Merge / backport into the release branch<br/>Branch-specific tests + approvals; freeze exceptions when enabled<br/>EA gatekeeper configured for 3.6-ea.1 / 3.6-ea.2"]
+  odh_installer["ODH installer operator build<br/>opendatahub-io/opendatahub-operator main push<br/>Output: opendatahub-operator:odh-stable; path filters apply"]
+  rh_images["RHOAI component image builds<br/>Release-branch push → Konflux hermetic builds<br/>EvalHub + workload + module → quay.io/rhoai/*-rhel9<br/>Four architectures; scans / attestations policy ? Q5"]
+  odh_bundle["ODH development bundle / catalog path<br/>ODH-Build-Config pins relatedImages; bundle build<br/>Operator stable → bundle sync every 2h / manual<br/>Bundle → catalog nudge; processor / policy details ? Q4–Q5"]
+  rh_nudge["G10 · Component digest nudge PR → installer<br/>rhods-operator build/operator-nudging.yaml<br/>Bot + one-file + title/version feasibility → auto-merge path"]
+  rh_installer["G11 · Assemble + build RHOAI installer operator<br/>Processor: digests → operands map + source manifest metadata<br/>Prefetch matching manifests; publish odh-rhel9-operator<br/>Nightly/manual refresh is a separate route."]
+  rh_bundle["G12 · Operator nudge → processed bundle / Helm<br/>Bot / file / title checks → bundle nudge merge<br/>Process CSV + relatedImages / Helm values, then build<br/>bundle-patch-only push is excluded from direct Tekton build."]
+  rh_catalog["G13 · Bundle digest → catalog processing → FBC build<br/>catalog/catalog-patch.yaml nudge; process catalog content<br/>Refresh PCC + select bundle snapshot; build FBC fragment<br/>Policy / integration-test enforcement remains Q5."]
+  rh_stage["G14 · Promote selected FBC to stage ? Q5–Q6<br/>Push To Stage: workflow_dispatch; select FBC / latest nightly<br/>Validate signed-image presence + catalog/PCC data<br/>QE sign-off, release-policy binding and caller / cadence: OPEN"]
+  stage_output["QE-installable staged catalog<br/>Built stage catalog → OLM bundle → installer / module / workloads"]
+  eval_pr --> eval_gate
+  eval_gate --> eval_fork
+  eval_fork --> eval_promote
+  operator_pr --> operator_gate
+  operator_gate --> operator_fork
+  operator_fork --> operator_promote
+  eval_promote --> odh_images
+  operator_promote --> odh_images
+  eval_promote -.-> rh_sync
+  operator_promote -.-> rh_sync
+  odh_images --> odh_select
+  odh_select --> odh_installer
+  odh_installer --> odh_bundle
+  rh_sync -.-> rh_freeze
+  rh_freeze --> rh_images
+  rh_images --> rh_nudge
+  rh_nudge --> rh_installer
+  rh_installer --> rh_bundle
+  rh_bundle --> rh_catalog
+  rh_catalog -.-> rh_stage
+  rh_stage -.-> stage_output
+  click eval_pr "https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/ci.yml" "Source" _blank
+  click operator_pr "https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/.github/workflows/controller-tests.yaml" "Source" _blank
+  click eval_gate "https://api.github.com/repos/eval-hub/eval-hub/rules/branches/main" "Source" _blank
+  click operator_gate "https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/.github/workflows/controller-tests.yaml" "Source" _blank
+  click eval_fork "https://github.com/opendatahub-io/eval-hub/blob/ec8770ae040fa4e63f7585f572cc9f5e59dcde54/.github/workflows/sync-upstream.yml" "Source" _blank
+  click operator_fork "https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/auto-merge-upstream-sync.yaml" "Source" _blank
+  click eval_promote "https://github.com/opendatahub-io/eval-hub/blob/ec8770ae040fa4e63f7585f572cc9f5e59dcde54/.github/workflows/sync-main-to-stable.yml" "Source" _blank
+  click operator_promote "https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/sync-branch-incubation.yaml" "Source" _blank
+  click odh_images "https://github.com/opendatahub-io/eval-hub/blob/cdb42724ee4ea84991a9ea80c0639cac345b57a9/.tekton/eval-hub-push.yaml" "Source" _blank
+  click rh_sync "https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml" "Source" _blank
+  click odh_select "https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.github/workflows/update-manifest-shas.yml" "Source" _blank
+  click rh_freeze "https://github.com/red-hat-data-services/eval-hub/blob/9ac639a44ec89a47fea82f376344264eec8b8fce/.github/workflows/post-codefreeze-gatekeeper.yaml" "Source" _blank
+  click odh_installer "https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.tekton/odh-operator-ci-push.yaml" "Source" _blank
+  click rh_images "https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml" "Source" _blank
+  click odh_bundle "https://github.com/opendatahub-io/ODH-Build-Config/blob/e9504048c67df9a2148b68a656407f38f34acc92/.tekton/odh-operator-bundle-ci-push.yaml" "Source" _blank
+  click rh_nudge "https://github.com/red-hat-data-services/rhods-operator/blob/8e4548175331858f7ab3b883531d0c3509a15edd/.github/workflows/operator-insta-merge.yaml" "Source" _blank
+  click rh_installer "https://github.com/red-hat-data-services/rhods-operator/blob/8e4548175331858f7ab3b883531d0c3509a15edd/.github/workflows/operator-processor.yaml" "Source" _blank
+  click rh_bundle "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/bundle-insta-merge.yaml" "Source" _blank
+  click rh_catalog "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.tekton/odh-operator-bundle-v3-6-push.yaml" "Source" _blank
+  click rh_stage "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/push-to-stage.yaml" "Source" _blank
+  click stage_output "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/push-to-stage.yaml" "Source" _blank
+  classDef unknown fill:#fff8e8,stroke:#946000,stroke-dasharray:6 4,color:#15212b
+  class operator_gate,rh_sync,rh_stage unknown

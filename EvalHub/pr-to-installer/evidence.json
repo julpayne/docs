@@ -1,0 +1,1055 @@
+{
+  "title": "From upstream PR to ODH images and a staged RHOAI installer",
+  "asOf": "2026-10-19",
+  "scope": "Current ODH / next RHOAI development path. rhoai-3.6 is the inspected release-branch example; EA branch gates differ. Configuration evidence, not an audit of live Konflux resources or successful build runs.",
+  "nodes": [
+    {
+      "id": "eval-pr",
+      "x": 55,
+      "y": 125,
+      "w": 650,
+      "h": 82,
+      "title": "EvalHub PR → upstream main",
+      "lines": [
+        "eval-hub/eval-hub"
+      ],
+      "kind": "source",
+      "detail": "Start with a PR in the canonical EvalHub repo. All binaries are built into the same container; the API, init, sidecar and MCP binaries do not represent four independent image promotion chains.",
+      "sources": [
+        "eval-ci"
+      ],
+      "questions": []
+    },
+    {
+      "id": "operator-pr",
+      "x": 815,
+      "y": 125,
+      "w": 650,
+      "h": 82,
+      "title": "TrustyAI operator PR → upstream main",
+      "lines": [
+        "trustyai-explainability/trustyai-service-operator"
+      ],
+      "kind": "source",
+      "detail": "This repository contains both the workload operator and the TrustyAI module operator. Follow both artifacts into the installer.",
+      "sources": [
+        "operator-ci",
+        "module-ci"
+      ],
+      "questions": []
+    },
+    {
+      "id": "eval-gate",
+      "x": 55,
+      "y": 240,
+      "w": 650,
+      "h": 112,
+      "title": "G1 · Required upstream merge gate",
+      "lines": [
+        "1 approval + CODEOWNERS + latest-push approval",
+        "Required checks + resolved review threads; up-to-date branch"
+      ],
+      "kind": "gate",
+      "detail": "Effective main rules require quality-checks, Gosec Security Scanner, gosec, dependency-review, CodeQL, docker-build-check; one review, code-owner review, last-push approval, stale-review dismissal and resolved threads. These are observed rules, not an audit of bypass actors. CI quality-checks runs formatting/vet, builds/tests including FVT, and documentation verification.",
+      "sources": [
+        "eval-rules",
+        "eval-ci"
+      ],
+      "questions": []
+    },
+    {
+      "id": "operator-gate",
+      "x": 815,
+      "y": 240,
+      "w": 650,
+      "h": 112,
+      "title": "G2 · Upstream CI / merge policy ? Q2",
+      "lines": [
+        "Controller + module smoke / manifest checks; Prow",
+        "Which checks and approvals are enforced remains open."
+      ],
+      "kind": "uncertain",
+      "detail": "GitHub workflows configure controller and module tests. Prow always runs images, and e2e runs for matching paths or an explicit test command. The enforcement layer was not established; do not infer that every listed workflow blocks merging.",
+      "sources": [
+        "operator-ci",
+        "module-ci",
+        "prow"
+      ],
+      "questions": [
+        "Q2"
+      ]
+    },
+    {
+      "id": "eval-fork",
+      "x": 55,
+      "y": 390,
+      "w": 650,
+      "h": 108,
+      "title": "G3 · Sync PR → ODH main",
+      "lines": [
+        "opendatahub-io/eval-hub",
+        "Hourly at :23 UTC / manual; conflicts fail; PR merge required"
+      ],
+      "kind": "gate",
+      "detail": "The hourly sync workflow uses a merge strategy, opens/updates a sync PR and fails on conflict. Effective main rules observed via GitHub require one approval. There is no workflow evidence that opening the sync PR automatically advances stable. Upstream CI also publishes quay.io/evalhub/evalhub independently.",
+      "sources": [
+        "eval-sync",
+        "eval-ci"
+      ],
+      "questions": []
+    },
+    {
+      "id": "operator-fork",
+      "x": 815,
+      "y": 390,
+      "w": 650,
+      "h": 108,
+      "title": "G4 · Upstream sync PR → ODH main",
+      "lines": [
+        "opendatahub-io/trustyai-service-operator",
+        "Pull bot PR: auto-approve / enable auto-merge; cadence ?"
+      ],
+      "kind": "gate",
+      "detail": "The workflow recognizes pull[bot], approves the sync PR and enables merge-commit auto-merge. This confirms the PR handling, but not the Pull app source configuration or sync schedule. Effective ODH main rules include one approval and CODEOWNERS/latest-push approval.",
+      "sources": [
+        "operator-sync"
+      ],
+      "questions": [
+        "Q1",
+        "Q2"
+      ]
+    },
+    {
+      "id": "eval-promote",
+      "x": 55,
+      "y": 535,
+      "w": 650,
+      "h": 102,
+      "title": "G5 · ODH main → stable sync PR",
+      "lines": [
+        "Push to main / manual creates sync PR",
+        "Gate: merge PR; resolve conflicts and destination requirements."
+      ],
+      "kind": "gate",
+      "detail": "Sync main to stable is a PR workflow with fail-on-conflict=true. It must merge before the stable push image build runs. Required checks on stable were not established.",
+      "sources": [
+        "eval-stable"
+      ],
+      "questions": []
+    },
+    {
+      "id": "operator-promote",
+      "x": 815,
+      "y": 535,
+      "w": 650,
+      "h": 102,
+      "title": "G6 · ODH main → incubation → stable PRs",
+      "lines": [
+        "main push opens incubation PR; incubation push opens stable PR",
+        "Module image has a separate main build (Q3)."
+      ],
+      "kind": "gate",
+      "detail": "Two workflows open promotion PRs. Creating these PRs is not evidence they have merged. The module operator build currently targets main, while the workload operator stable definition targets stable.",
+      "sources": [
+        "operator-incubation",
+        "operator-stable",
+        "odh-module-build"
+      ],
+      "questions": [
+        "Q3"
+      ]
+    },
+    {
+      "id": "odh-images",
+      "x": 55,
+      "y": 750,
+      "w": 650,
+      "h": 134,
+      "title": "ODH component image builds",
+      "lines": [
+        "EvalHub stable → quay.io/opendatahub/odh-eval-hub",
+        "Workload stable + module main → opendatahub operator images",
+        "Tag: odh-stable; Konflux build / scan tasks (policy: Q4–Q5)"
+      ],
+      "kind": "build",
+      "detail": "Stable EvalHub and TrustyAI workload PipelineRuns resolve odh-konflux-central pipeline/multi-arch-container-build.yaml. Module PipelineRuns target main and publish odh-trustyai-module-operator:odh-stable. Central scan task presence does not prove all findings block selection. Community quay.io/evalhub/evalhub is a parallel upstream output, not the RHOAI container being promoted.",
+      "sources": [
+        "odh-eval-build",
+        "odh-workload-build",
+        "odh-module-build",
+        "odh-build-pipeline"
+      ],
+      "questions": [
+        "Q3",
+        "Q4",
+        "Q5"
+      ]
+    },
+    {
+      "id": "rh-sync",
+      "x": 815,
+      "y": 750,
+      "w": 650,
+      "h": 134,
+      "title": "G7 · ODH → Red Hat source promotion ? Q1",
+      "lines": [
+        "red-hat-data-services/{eval-hub, trustyai-service-operator}",
+        "Destination builds verified on rhoai-3.6",
+        "Source branch / sync bot / cadence / approvals: OPEN"
+      ],
+      "kind": "uncertain",
+      "detail": "The destination release PipelineRuns are verified. The ODH → Red Hat component synchronization mechanism and intermediate branch sequence have not been established. Do not treat this edge as an automatic promotion of ODH images: Red Hat performs a separate build from downstream source.",
+      "sources": [
+        "rh-eval-build",
+        "rh-workload-build"
+      ],
+      "questions": [
+        "Q1"
+      ]
+    },
+    {
+      "id": "odh-select",
+      "x": 55,
+      "y": 925,
+      "w": 650,
+      "h": 108,
+      "title": "G8 · Select manifests + immutable image digests",
+      "lines": [
+        "Daily 06:00 UTC / manual manifest-update PR",
+        "Merge updated SHA / digest pins; eligibility policy ? Q4"
+      ],
+      "kind": "gate",
+      "detail": "ODH Update Manifest SHAs runs make update-refs-shas and resolves image digests when updates are needed, opening a PR. Failed component fetches add do-not-merge and fail the workflow. manifests-config.yaml pins TrustyAI module manifests from ODH main and keeps explicit image digests. Build Config separately lists selected relatedImages. These configurations can lag independently; atomicity was not established.",
+      "sources": [
+        "manifest-update",
+        "manifest-pins",
+        "odh-digests"
+      ],
+      "questions": [
+        "Q3",
+        "Q4"
+      ]
+    },
+    {
+      "id": "rh-freeze",
+      "x": 815,
+      "y": 925,
+      "w": 650,
+      "h": 108,
+      "title": "G9 · Merge / backport into the release branch",
+      "lines": [
+        "Branch-specific tests + approvals; freeze exceptions when enabled",
+        "EA gatekeeper configured for 3.6-ea.1 / 3.6-ea.2"
+      ],
+      "kind": "gate",
+      "detail": "Push builds run after code reaches the release branch. The inspected main gatekeeper definition calls shared post-codefreeze logic for two EA branches; confirm its deployed status, required label/approval policy, and branch coverage. Do not assume the EA gate applies to every development branch.",
+      "sources": [
+        "rh-freeze",
+        "rh-eval-build",
+        "rh-workload-build"
+      ],
+      "questions": [
+        "Q1",
+        "Q2"
+      ]
+    },
+    {
+      "id": "odh-installer",
+      "x": 55,
+      "y": 1075,
+      "w": 650,
+      "h": 108,
+      "title": "ODH installer operator build",
+      "lines": [
+        "opendatahub-io/opendatahub-operator main push",
+        "Output: opendatahub-operator:odh-stable; path filters apply"
+      ],
+      "kind": "build",
+      "detail": "The checked-in CI push pipeline builds Dockerfiles/rhoai.Dockerfile with BUILD_TYPE=CI via multi-arch-operator-build.yaml and nudges bundle/bundle-patch.yaml. A component image existing in Quay does not itself update this source build.",
+      "sources": [
+        "odh-installer",
+        "manifest-pins"
+      ],
+      "questions": []
+    },
+    {
+      "id": "rh-images",
+      "x": 815,
+      "y": 1075,
+      "w": 650,
+      "h": 132,
+      "title": "RHOAI component image builds",
+      "lines": [
+        "Release-branch push → Konflux hermetic builds",
+        "EvalHub + workload + module → quay.io/rhoai/*-rhel9",
+        "Four architectures; scans / attestations policy ? Q5"
+      ],
+      "kind": "build",
+      "detail": "Verified release PipelineRuns build source/images from downstream Dockerfile.konflux definitions for x86_64, ppc64le, s390x and arm64. Each inspected component push pipeline sets build-nudge-files to build/operator-nudging.yaml. Image publication and policy approval are separate states.",
+      "sources": [
+        "rh-eval-build",
+        "rh-workload-build",
+        "rh-module-build",
+        "rh-central"
+      ],
+      "questions": [
+        "Q5"
+      ]
+    },
+    {
+      "id": "odh-bundle",
+      "x": 55,
+      "y": 1225,
+      "w": 650,
+      "h": 126,
+      "title": "ODH development bundle / catalog path",
+      "lines": [
+        "ODH-Build-Config pins relatedImages; bundle build",
+        "Operator stable → bundle sync every 2h / manual",
+        "Bundle → catalog nudge; processor / policy details ? Q4–Q5"
+      ],
+      "kind": "build",
+      "detail": "The ODH bundle CI PipelineRun publishes opendatahub-operator-bundle:odh-stable and nudges catalog/catalog-patch.yaml. A bundle-patch-only change is excluded from the direct bundle build and needs processed output. Bundle Sync CI generates bundle content from opendatahub-operator stable. The complete active ODH processor/catalog policy was not audited; this is contextual to the requested ODH image endpoint.",
+      "sources": [
+        "odh-bundle",
+        "odh-bundle-sync",
+        "odh-digests"
+      ],
+      "questions": [
+        "Q4",
+        "Q5"
+      ]
+    },
+    {
+      "id": "rh-nudge",
+      "x": 815,
+      "y": 1250,
+      "w": 650,
+      "h": 110,
+      "title": "G10 · Component digest nudge PR → installer",
+      "lines": [
+        "rhods-operator build/operator-nudging.yaml",
+        "Bot + one-file + title/version feasibility → auto-merge path"
+      ],
+      "kind": "gate",
+      "detail": "The installer insta-merge workflow restricts handling to konflux-internal-p02[bot], permitted title/version pattern and exactly the nudging file. It invokes shared insta-merge logic; this file alone does not establish additional CI or policy verdicts required before the nudge is emitted. The Operator Processor runs on an eligible bot push or manual dispatch.",
+      "sources": [
+        "operator-nudge",
+        "operator-process"
+      ],
+      "questions": [
+        "Q4",
+        "Q5"
+      ]
+    },
+    {
+      "id": "rh-installer",
+      "x": 815,
+      "y": 1400,
+      "w": 650,
+      "h": 115,
+      "title": "G11 · Assemble + build RHOAI installer operator",
+      "lines": [
+        "Processor: digests → operands map + source manifest metadata",
+        "Prefetch matching manifests; publish odh-rhel9-operator",
+        "Nightly/manual refresh is a separate route."
+      ],
+      "kind": "build",
+      "detail": "The processor combines Build Config relatedImages with nudged digests, resolves image git.url/git.commit labels for manifest entries, and commits generated operands and prefetched content. A qualifying release-branch push builds the installer and nudges RHOAI Build Config bundle/bundle-patch.yaml. The nightly workflow is workflow_dispatch; its external cadence was not established.",
+      "sources": [
+        "operator-process",
+        "processor-logic",
+        "rh-installer",
+        "rh-nightly"
+      ],
+      "questions": [
+        "Q4",
+        "Q6"
+      ]
+    },
+    {
+      "id": "rh-bundle",
+      "x": 815,
+      "y": 1555,
+      "w": 650,
+      "h": 115,
+      "title": "G12 · Operator nudge → processed bundle / Helm",
+      "lines": [
+        "Bot / file / title checks → bundle nudge merge",
+        "Process CSV + relatedImages / Helm values, then build",
+        "bundle-patch-only push is excluded from direct Tekton build."
+      ],
+      "kind": "gate",
+      "detail": "RHOAI Build Config bundle-insta-merge validates bot and changed-file feasibility. Process Operator Bundle handles the input change and commits processed bundle/Helm content. The generated content, not merely a bundle-patch edit, triggers the bundle build. Helm builds are parallel outputs; this diagram follows OLM bundle/catalog to the staged installation endpoint.",
+      "sources": [
+        "rh-bundle-nudge",
+        "rh-bundle-process",
+        "rh-bundle-build"
+      ],
+      "questions": [
+        "Q5"
+      ]
+    },
+    {
+      "id": "rh-catalog",
+      "x": 815,
+      "y": 1710,
+      "w": 650,
+      "h": 110,
+      "title": "G13 · Bundle digest → catalog processing → FBC build",
+      "lines": [
+        "catalog/catalog-patch.yaml nudge; process catalog content",
+        "Refresh PCC + select bundle snapshot; build FBC fragment",
+        "Policy / integration-test enforcement remains Q5."
+      ],
+      "kind": "gate",
+      "detail": "The bundle build nudges catalog/catalog-patch.yaml. Process FBC Fragment refreshes PCC, selects snapshot bundle images and commits catalog content. The direct FBC push trigger excludes catalog-patch-only changes. The inspected IntegrationTestScenario still names the 2.17 application and cannot establish the live 3.6 EC gate.",
+      "sources": [
+        "rh-bundle-build",
+        "rh-fbc-process",
+        "rh-fbc-build",
+        "ec-scenario"
+      ],
+      "questions": [
+        "Q5"
+      ]
+    },
+    {
+      "id": "rh-stage",
+      "x": 815,
+      "y": 1860,
+      "w": 650,
+      "h": 125,
+      "title": "G14 · Promote selected FBC to stage ? Q5–Q6",
+      "lines": [
+        "Push To Stage: workflow_dispatch; select FBC / latest nightly",
+        "Validate signed-image presence + catalog/PCC data",
+        "QE sign-off, release-policy binding and caller / cadence: OPEN"
+      ],
+      "kind": "uncertain",
+      "detail": "Push To Stage accepts an FBC image (or LATEST_NIGHTLY), checks signed-image presence, validates/regenerates PCC, patches the stage catalog on Build Config main and monitors resulting catalog builds. A signature-presence check is not evidence of a full Enterprise Contract verdict. Required QE sign-off and the external trigger are not established.",
+      "sources": [
+        "stage",
+        "ec-scenario"
+      ],
+      "questions": [
+        "Q5",
+        "Q6"
+      ]
+    },
+    {
+      "id": "stage-output",
+      "x": 815,
+      "y": 2025,
+      "w": 650,
+      "h": 82,
+      "title": "QE-installable staged catalog",
+      "lines": [
+        "Built stage catalog → OLM bundle → installer / module / workloads"
+      ],
+      "kind": "output",
+      "detail": "Endpoint requested by the user. Record the catalog digest, bundle digest, installer digest and related component digests together to trace which upstream commit is actually installable. Successful workflows alone do not prove the cluster installs the intended image set.",
+      "sources": [
+        "stage",
+        "rh-bundle-build",
+        "rh-installer"
+      ],
+      "questions": [
+        "Q6"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "a": "eval-pr",
+      "b": "eval-gate",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "eval-gate",
+      "b": "eval-fork",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "eval-fork",
+      "b": "eval-promote",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "operator-pr",
+      "b": "operator-gate",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "operator-gate",
+      "b": "operator-fork",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "operator-fork",
+      "b": "operator-promote",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "eval-promote",
+      "b": "odh-images",
+      "label": "stable builds",
+      "dashed": false
+    },
+    {
+      "a": "operator-promote",
+      "b": "odh-images",
+      "label": "workload stable / module main",
+      "dashed": false
+    },
+    {
+      "a": "eval-promote",
+      "b": "rh-sync",
+      "label": "downstream source handoff",
+      "dashed": true
+    },
+    {
+      "a": "operator-promote",
+      "b": "rh-sync",
+      "label": "downstream source handoff",
+      "dashed": true
+    },
+    {
+      "a": "odh-images",
+      "b": "odh-select",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "odh-select",
+      "b": "odh-installer",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "odh-installer",
+      "b": "odh-bundle",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "rh-sync",
+      "b": "rh-freeze",
+      "label": "",
+      "dashed": true
+    },
+    {
+      "a": "rh-freeze",
+      "b": "rh-images",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "rh-images",
+      "b": "rh-nudge",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "rh-nudge",
+      "b": "rh-installer",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "rh-installer",
+      "b": "rh-bundle",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "rh-bundle",
+      "b": "rh-catalog",
+      "label": "",
+      "dashed": false
+    },
+    {
+      "a": "rh-catalog",
+      "b": "rh-stage",
+      "label": "",
+      "dashed": true
+    },
+    {
+      "a": "rh-stage",
+      "b": "stage-output",
+      "label": "",
+      "dashed": true
+    }
+  ],
+  "sources": {
+    "eval-rules": {
+      "id": "eval-rules",
+      "title": "eval-hub/eval-hub · repository (main)",
+      "url": "https://api.github.com/repos/eval-hub/eval-hub/rules/branches/main",
+      "note": "Live GitHub branch-rules API: GET /repos/eval-hub/eval-hub/rules/branches/main. Effective rules observed 2026-10-19; bypass actor permissions were not audited."
+    },
+    "eval-ci": {
+      "id": "eval-ci",
+      "title": "eval-hub/eval-hub · .github/workflows/ci.yml (main)",
+      "url": "https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/ci.yml",
+      "note": "",
+      "branchUrl": "https://github.com/eval-hub/eval-hub/blob/main/.github/workflows/ci.yml",
+      "commit": "33605699cc4ec69796a9c570049663fc1011a8c0"
+    },
+    "operator-ci": {
+      "id": "operator-ci",
+      "title": "trustyai-explainability/trustyai-service-operator · .github/workflows/controller-tests.yaml (main)",
+      "url": "https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/.github/workflows/controller-tests.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/trustyai-explainability/trustyai-service-operator/blob/main/.github/workflows/controller-tests.yaml",
+      "commit": "2852260f01a31ce92ed6e95b88bc3031be77f3e3"
+    },
+    "module-ci": {
+      "id": "module-ci",
+      "title": "trustyai-explainability/trustyai-service-operator · .github/workflows/trustyai-module-e2e-test.yaml (main)",
+      "url": "https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/.github/workflows/trustyai-module-e2e-test.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/trustyai-explainability/trustyai-service-operator/blob/main/.github/workflows/trustyai-module-e2e-test.yaml",
+      "commit": "2852260f01a31ce92ed6e95b88bc3031be77f3e3"
+    },
+    "prow": {
+      "id": "prow",
+      "title": "openshift/release · ci-operator/jobs/trustyai-explainability/trustyai-service-operator/trustyai-explainability-trustyai-service-operator-main-presubmits.yaml (main)",
+      "url": "https://github.com/openshift/release/blob/f3f2d1744d63f2a4f36424e4fa9a7a08fae8c8ef/ci-operator/jobs/trustyai-explainability/trustyai-service-operator/trustyai-explainability-trustyai-service-operator-main-presubmits.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/openshift/release/blob/main/ci-operator/jobs/trustyai-explainability/trustyai-service-operator/trustyai-explainability-trustyai-service-operator-main-presubmits.yaml",
+      "commit": "f3f2d1744d63f2a4f36424e4fa9a7a08fae8c8ef"
+    },
+    "eval-sync": {
+      "id": "eval-sync",
+      "title": "opendatahub-io/eval-hub · .github/workflows/sync-upstream.yml (main)",
+      "url": "https://github.com/opendatahub-io/eval-hub/blob/ec8770ae040fa4e63f7585f572cc9f5e59dcde54/.github/workflows/sync-upstream.yml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/eval-hub/blob/main/.github/workflows/sync-upstream.yml",
+      "commit": "ec8770ae040fa4e63f7585f572cc9f5e59dcde54"
+    },
+    "eval-stable": {
+      "id": "eval-stable",
+      "title": "opendatahub-io/eval-hub · .github/workflows/sync-main-to-stable.yml (main)",
+      "url": "https://github.com/opendatahub-io/eval-hub/blob/ec8770ae040fa4e63f7585f572cc9f5e59dcde54/.github/workflows/sync-main-to-stable.yml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/eval-hub/blob/main/.github/workflows/sync-main-to-stable.yml",
+      "commit": "ec8770ae040fa4e63f7585f572cc9f5e59dcde54"
+    },
+    "operator-sync": {
+      "id": "operator-sync",
+      "title": "opendatahub-io/trustyai-service-operator · .github/workflows/auto-merge-upstream-sync.yaml (main)",
+      "url": "https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/auto-merge-upstream-sync.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/trustyai-service-operator/blob/main/.github/workflows/auto-merge-upstream-sync.yaml",
+      "commit": "c517af62634a2c388df406994dede74f3ca95398"
+    },
+    "operator-incubation": {
+      "id": "operator-incubation",
+      "title": "opendatahub-io/trustyai-service-operator · .github/workflows/sync-branch-incubation.yaml (main)",
+      "url": "https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/sync-branch-incubation.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/trustyai-service-operator/blob/main/.github/workflows/sync-branch-incubation.yaml",
+      "commit": "c517af62634a2c388df406994dede74f3ca95398"
+    },
+    "operator-stable": {
+      "id": "operator-stable",
+      "title": "opendatahub-io/trustyai-service-operator · .github/workflows/sync-branch-stable.yaml (main)",
+      "url": "https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/sync-branch-stable.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/trustyai-service-operator/blob/main/.github/workflows/sync-branch-stable.yaml",
+      "commit": "c517af62634a2c388df406994dede74f3ca95398"
+    },
+    "odh-eval-build": {
+      "id": "odh-eval-build",
+      "title": "opendatahub-io/eval-hub · .tekton/eval-hub-push.yaml (stable)",
+      "url": "https://github.com/opendatahub-io/eval-hub/blob/cdb42724ee4ea84991a9ea80c0639cac345b57a9/.tekton/eval-hub-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/eval-hub/blob/stable/.tekton/eval-hub-push.yaml",
+      "commit": "cdb42724ee4ea84991a9ea80c0639cac345b57a9"
+    },
+    "odh-workload-build": {
+      "id": "odh-workload-build",
+      "title": "opendatahub-io/trustyai-service-operator · .tekton/odh-trustyai-service-operator-push.yaml (stable)",
+      "url": "https://github.com/opendatahub-io/trustyai-service-operator/blob/309bf1a35ca9a75c72a5b66deae16b85514ef9f0/.tekton/odh-trustyai-service-operator-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/trustyai-service-operator/blob/stable/.tekton/odh-trustyai-service-operator-push.yaml",
+      "commit": "309bf1a35ca9a75c72a5b66deae16b85514ef9f0"
+    },
+    "odh-module-build": {
+      "id": "odh-module-build",
+      "title": "opendatahub-io/trustyai-service-operator · .tekton/odh-trustyai-module-operator-push.yaml (main)",
+      "url": "https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.tekton/odh-trustyai-module-operator-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/trustyai-service-operator/blob/main/.tekton/odh-trustyai-module-operator-push.yaml",
+      "commit": "c517af62634a2c388df406994dede74f3ca95398"
+    },
+    "odh-module-stable": {
+      "id": "odh-module-stable",
+      "title": "opendatahub-io/trustyai-service-operator · .tekton/odh-trustyai-module-operator-push.yaml (stable)",
+      "url": "https://github.com/opendatahub-io/trustyai-service-operator/blob/309bf1a35ca9a75c72a5b66deae16b85514ef9f0/.tekton/odh-trustyai-module-operator-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/trustyai-service-operator/blob/stable/.tekton/odh-trustyai-module-operator-push.yaml",
+      "commit": "309bf1a35ca9a75c72a5b66deae16b85514ef9f0"
+    },
+    "odh-build-pipeline": {
+      "id": "odh-build-pipeline",
+      "title": "opendatahub-io/odh-konflux-central · pipeline/multi-arch-container-build.yaml (main)",
+      "url": "https://github.com/opendatahub-io/odh-konflux-central/blob/5c90e01e1826f4d539f1ef7e10fa2fec8034d5d5/pipeline/multi-arch-container-build.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/odh-konflux-central/blob/main/pipeline/multi-arch-container-build.yaml",
+      "commit": "5c90e01e1826f4d539f1ef7e10fa2fec8034d5d5"
+    },
+    "manifest-update": {
+      "id": "manifest-update",
+      "title": "opendatahub-io/opendatahub-operator · .github/workflows/update-manifest-shas.yml (main)",
+      "url": "https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.github/workflows/update-manifest-shas.yml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/opendatahub-operator/blob/main/.github/workflows/update-manifest-shas.yml",
+      "commit": "e1445db9585f25aed5f8bb54db13dc2f6ce6b45d"
+    },
+    "manifest-pins": {
+      "id": "manifest-pins",
+      "title": "opendatahub-io/opendatahub-operator · manifests-config.yaml (main)",
+      "url": "https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/manifests-config.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/opendatahub-operator/blob/main/manifests-config.yaml",
+      "commit": "e1445db9585f25aed5f8bb54db13dc2f6ce6b45d"
+    },
+    "odh-installer": {
+      "id": "odh-installer",
+      "title": "opendatahub-io/opendatahub-operator · .tekton/odh-operator-ci-push.yaml (main)",
+      "url": "https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.tekton/odh-operator-ci-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/opendatahub-operator/blob/main/.tekton/odh-operator-ci-push.yaml",
+      "commit": "e1445db9585f25aed5f8bb54db13dc2f6ce6b45d"
+    },
+    "odh-bundle": {
+      "id": "odh-bundle",
+      "title": "opendatahub-io/ODH-Build-Config · .tekton/odh-operator-bundle-ci-push.yaml (main)",
+      "url": "https://github.com/opendatahub-io/ODH-Build-Config/blob/e9504048c67df9a2148b68a656407f38f34acc92/.tekton/odh-operator-bundle-ci-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/ODH-Build-Config/blob/main/.tekton/odh-operator-bundle-ci-push.yaml",
+      "commit": "e9504048c67df9a2148b68a656407f38f34acc92"
+    },
+    "odh-bundle-sync": {
+      "id": "odh-bundle-sync",
+      "title": "opendatahub-io/ODH-Build-Config · .github/workflows/bundle-sync.yml (main)",
+      "url": "https://github.com/opendatahub-io/ODH-Build-Config/blob/e9504048c67df9a2148b68a656407f38f34acc92/.github/workflows/bundle-sync.yml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/ODH-Build-Config/blob/main/.github/workflows/bundle-sync.yml",
+      "commit": "e9504048c67df9a2148b68a656407f38f34acc92"
+    },
+    "odh-digests": {
+      "id": "odh-digests",
+      "title": "opendatahub-io/ODH-Build-Config · bundle/bundle-patch.yaml (main)",
+      "url": "https://github.com/opendatahub-io/ODH-Build-Config/blob/e9504048c67df9a2148b68a656407f38f34acc92/bundle/bundle-patch.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/opendatahub-io/ODH-Build-Config/blob/main/bundle/bundle-patch.yaml",
+      "commit": "e9504048c67df9a2148b68a656407f38f34acc92"
+    },
+    "rh-eval-build": {
+      "id": "rh-eval-build",
+      "title": "red-hat-data-services/eval-hub · .tekton/odh-eval-hub-v3-6-push.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/eval-hub/blob/rhoai-3.6/.tekton/odh-eval-hub-v3-6-push.yaml",
+      "commit": "999680fab061e6d4dfb97e1d558e6cdbd4d7a40b"
+    },
+    "rh-workload-build": {
+      "id": "rh-workload-build",
+      "title": "red-hat-data-services/trustyai-service-operator · .tekton/odh-trustyai-service-operator-v3-6-push.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/trustyai-service-operator/blob/718760309b309fb4c20b99cbee59bd21ada77796/.tekton/odh-trustyai-service-operator-v3-6-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/trustyai-service-operator/blob/rhoai-3.6/.tekton/odh-trustyai-service-operator-v3-6-push.yaml",
+      "commit": "718760309b309fb4c20b99cbee59bd21ada77796"
+    },
+    "rh-module-build": {
+      "id": "rh-module-build",
+      "title": "red-hat-data-services/trustyai-service-operator · .tekton/odh-trustyai-module-operator-v3-6-push.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/trustyai-service-operator/blob/718760309b309fb4c20b99cbee59bd21ada77796/.tekton/odh-trustyai-module-operator-v3-6-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/trustyai-service-operator/blob/rhoai-3.6/.tekton/odh-trustyai-module-operator-v3-6-push.yaml",
+      "commit": "718760309b309fb4c20b99cbee59bd21ada77796"
+    },
+    "rh-freeze": {
+      "id": "rh-freeze",
+      "title": "red-hat-data-services/eval-hub · .github/workflows/post-codefreeze-gatekeeper.yaml (main)",
+      "url": "https://github.com/red-hat-data-services/eval-hub/blob/9ac639a44ec89a47fea82f376344264eec8b8fce/.github/workflows/post-codefreeze-gatekeeper.yaml",
+      "note": "Observed main definition applies to rhoai-3.6-ea.1 and rhoai-3.6-ea.2; do not assume it covers every branch.",
+      "branchUrl": "https://github.com/red-hat-data-services/eval-hub/blob/main/.github/workflows/post-codefreeze-gatekeeper.yaml",
+      "commit": "9ac639a44ec89a47fea82f376344264eec8b8fce"
+    },
+    "rh-central": {
+      "id": "rh-central",
+      "title": "red-hat-data-services/konflux-central · pipelines/multi-arch-container-build.yaml (main)",
+      "url": "https://github.com/red-hat-data-services/konflux-central/blob/e416e32aab51af0668bcf0362effdf27ab0e16ee/pipelines/multi-arch-container-build.yaml",
+      "note": "Main shows scan task definitions; release builds resolve their matching release branch. Active exceptions and live policy were not audited.",
+      "branchUrl": "https://github.com/red-hat-data-services/konflux-central/blob/main/pipelines/multi-arch-container-build.yaml",
+      "commit": "e416e32aab51af0668bcf0362effdf27ab0e16ee"
+    },
+    "operator-nudge": {
+      "id": "operator-nudge",
+      "title": "red-hat-data-services/rhods-operator · .github/workflows/operator-insta-merge.yaml (main)",
+      "url": "https://github.com/red-hat-data-services/rhods-operator/blob/8e4548175331858f7ab3b883531d0c3509a15edd/.github/workflows/operator-insta-merge.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/rhods-operator/blob/main/.github/workflows/operator-insta-merge.yaml",
+      "commit": "8e4548175331858f7ab3b883531d0c3509a15edd"
+    },
+    "operator-process": {
+      "id": "operator-process",
+      "title": "red-hat-data-services/rhods-operator · .github/workflows/operator-processor.yaml (main)",
+      "url": "https://github.com/red-hat-data-services/rhods-operator/blob/8e4548175331858f7ab3b883531d0c3509a15edd/.github/workflows/operator-processor.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/rhods-operator/blob/main/.github/workflows/operator-processor.yaml",
+      "commit": "8e4548175331858f7ab3b883531d0c3509a15edd"
+    },
+    "processor-logic": {
+      "id": "processor-logic",
+      "title": "red-hat-data-services/RHOAI-Konflux-Automation · utils/processors/operator-processor.py (main)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Konflux-Automation/blob/cd62bdee1311f45542d8608747e502de7f13315a/utils/processors/operator-processor.py",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Konflux-Automation/blob/main/utils/processors/operator-processor.py",
+      "commit": "cd62bdee1311f45542d8608747e502de7f13315a"
+    },
+    "rh-installer": {
+      "id": "rh-installer",
+      "title": "red-hat-data-services/rhods-operator · .tekton/odh-operator-v3-6-push.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/rhods-operator/blob/1cc424c7522ff08e7d24cd97cbe187880f1ee0c5/.tekton/odh-operator-v3-6-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/rhods-operator/blob/rhoai-3.6/.tekton/odh-operator-v3-6-push.yaml",
+      "commit": "1cc424c7522ff08e7d24cd97cbe187880f1ee0c5"
+    },
+    "rh-nightly": {
+      "id": "rh-nightly",
+      "title": "red-hat-data-services/rhods-operator · .github/workflows/trigger-nightly-operator-build.yaml (main)",
+      "url": "https://github.com/red-hat-data-services/rhods-operator/blob/8e4548175331858f7ab3b883531d0c3509a15edd/.github/workflows/trigger-nightly-operator-build.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/rhods-operator/blob/main/.github/workflows/trigger-nightly-operator-build.yaml",
+      "commit": "8e4548175331858f7ab3b883531d0c3509a15edd"
+    },
+    "rh-bundle-nudge": {
+      "id": "rh-bundle-nudge",
+      "title": "red-hat-data-services/RHOAI-Build-Config · .github/workflows/bundle-insta-merge.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/bundle-insta-merge.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/rhoai-3.6/.github/workflows/bundle-insta-merge.yaml",
+      "commit": "3e9b401f59351d58d938699d90e6f1a0e2a3dac8"
+    },
+    "rh-bundle-process": {
+      "id": "rh-bundle-process",
+      "title": "red-hat-data-services/RHOAI-Build-Config · .github/workflows/process-operator-bundle.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/process-operator-bundle.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/rhoai-3.6/.github/workflows/process-operator-bundle.yaml",
+      "commit": "3e9b401f59351d58d938699d90e6f1a0e2a3dac8"
+    },
+    "rh-bundle-build": {
+      "id": "rh-bundle-build",
+      "title": "red-hat-data-services/RHOAI-Build-Config · .tekton/odh-operator-bundle-v3-6-push.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.tekton/odh-operator-bundle-v3-6-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/rhoai-3.6/.tekton/odh-operator-bundle-v3-6-push.yaml",
+      "commit": "3e9b401f59351d58d938699d90e6f1a0e2a3dac8"
+    },
+    "rh-fbc-process": {
+      "id": "rh-fbc-process",
+      "title": "red-hat-data-services/RHOAI-Build-Config · .github/workflows/process-fbc-fragment.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/process-fbc-fragment.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/rhoai-3.6/.github/workflows/process-fbc-fragment.yaml",
+      "commit": "3e9b401f59351d58d938699d90e6f1a0e2a3dac8"
+    },
+    "rh-fbc-build": {
+      "id": "rh-fbc-build",
+      "title": "red-hat-data-services/RHOAI-Build-Config · .tekton/rhoai-fbc-fragment-v3-6-push.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.tekton/rhoai-fbc-fragment-v3-6-push.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/rhoai-3.6/.tekton/rhoai-fbc-fragment-v3-6-push.yaml",
+      "commit": "3e9b401f59351d58d938699d90e6f1a0e2a3dac8"
+    },
+    "stage": {
+      "id": "stage",
+      "title": "red-hat-data-services/RHOAI-Build-Config · .github/workflows/push-to-stage.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/push-to-stage.yaml",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/rhoai-3.6/.github/workflows/push-to-stage.yaml",
+      "commit": "3e9b401f59351d58d938699d90e6f1a0e2a3dac8"
+    },
+    "ec-scenario": {
+      "id": "ec-scenario",
+      "title": "red-hat-data-services/RHOAI-Build-Config · integration-tests/integration-test.yaml (rhoai-3.6)",
+      "url": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/integration-tests/integration-test.yaml",
+      "note": "Checked-in scenario is named rhoai-v2-17-enterprise-contract, not rhoai-v3-6; it cannot prove the live 3.6 binding.",
+      "branchUrl": "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/rhoai-3.6/integration-tests/integration-test.yaml",
+      "commit": "3e9b401f59351d58d938699d90e6f1a0e2a3dac8"
+    },
+    "early-gate": {
+      "id": "early-gate",
+      "title": "red-hat-data-services/konflux-central · early-gate/docs/README.md (main)",
+      "url": "https://github.com/red-hat-data-services/konflux-central/blob/e416e32aab51af0668bcf0362effdf27ab0e16ee/early-gate/docs/README.md",
+      "note": "",
+      "branchUrl": "https://github.com/red-hat-data-services/konflux-central/blob/main/early-gate/docs/README.md",
+      "commit": "e416e32aab51af0668bcf0362effdf27ab0e16ee"
+    },
+    "config-sync": {
+      "id": "config-sync",
+      "title": "eval-hub/eval-hub · .github/workflows/check-trustyai-service-operator-configmap-sync.yml (main)",
+      "url": "https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/check-trustyai-service-operator-configmap-sync.yml",
+      "note": "",
+      "branchUrl": "https://github.com/eval-hub/eval-hub/blob/main/.github/workflows/check-trustyai-service-operator-configmap-sync.yml",
+      "commit": "33605699cc4ec69796a9c570049663fc1011a8c0"
+    }
+  },
+  "questions": [
+    {
+      "id": "Q1",
+      "title": "Who moves ODH code into the Red Hat forks?",
+      "text": "Keep open: identify the exact source branch, target branch, bot/configuration, schedule, conflict owner, approvals, and backport rules for each component. Do stable → downstream main → rhoai-3.6 actually apply to both?",
+      "sources": [
+        "eval-stable",
+        "operator-stable",
+        "rh-eval-build",
+        "rh-workload-build"
+      ],
+      "owner": "Component maintainers / DevOps"
+    },
+    {
+      "id": "Q2",
+      "title": "Which TrustyAI tests actually block merges?",
+      "text": "Controller, module smoke and Prow tests are configured. Prow e2e is path-triggered. The classic branch-protection endpoint was inaccessible and the branch-rules endpoint returned no rules for upstream TrustyAI; confirm Tide/branch protection, required contexts, approvals and override policy. ODH main rules show one approval; this does not establish stable/incubation requirements.",
+      "sources": [
+        "operator-ci",
+        "module-ci",
+        "prow",
+        "operator-sync"
+      ],
+      "owner": "Repository / CI owners"
+    },
+    {
+      "id": "Q3",
+      "title": "Are module and workload images intentionally built from different branches?",
+      "text": "EvalHub and TrustyAI workload builds target stable. The TrustyAI module build targets main, including the copy on stable. ODH installer manifests pin TrustyAI main. Confirm that this split is intentional and that a compatible module + workload + EvalHub set is tested together.",
+      "sources": [
+        "odh-eval-build",
+        "odh-workload-build",
+        "odh-module-build",
+        "odh-module-stable",
+        "manifest-pins"
+      ],
+      "owner": "TrustyAI / ODH maintainers"
+    },
+    {
+      "id": "Q4",
+      "title": "What makes an image set eligible for installer selection?",
+      "text": "Digest pins and image-update PRs exist. Confirm which successful tests or policy verdicts gate a component digest nudge, who owns ODH Build Config updates, and what prevents mismatches between the selected image, module manifests, and provider ConfigMaps. The EvalHub ConfigMap sync workflow checks drift after main pushes and nightly; it does not itself promote changes.",
+      "sources": [
+        "manifest-pins",
+        "odh-digests",
+        "operator-nudge",
+        "config-sync"
+      ],
+      "owner": "Build / integration owners"
+    },
+    {
+      "id": "Q5",
+      "title": "Which QE / Enterprise Contract verdicts are mandatory?",
+      "text": "The source defines scan tasks and Early Gate testing, but that alone does not prove merge or stage enforcement. The inspected release integration-test YAML still names a 2.17 application. Confirm live 3.6 IntegrationTestScenarios, release policy, required BVT/e2e suites, exceptions and whether Early Gate is required.",
+      "sources": [
+        "rh-central",
+        "ec-scenario",
+        "early-gate"
+      ],
+      "owner": "QE / Konflux / release engineering"
+    },
+    {
+      "id": "Q6",
+      "title": "Who triggers and approves promotion to the staged catalog?",
+      "text": "Push To Stage is workflow_dispatch and validates that a signed FBC image exists plus catalog/PCC data. Confirm the external caller or schedule, required QE sign-off, supported OCP versions and the exact catalog image/namespace QE installs. Next-development examples use rhoai-3.6; confirm when EA branches are the intended stream.",
+      "sources": [
+        "stage",
+        "rh-freeze"
+      ],
+      "owner": "Release engineering / QE"
+    }
+  ],
+  "observedEvalHubMainRules": [
+    {
+      "type": "deletion",
+      "ruleset_source_type": "Repository",
+      "ruleset_source": "eval-hub/eval-hub",
+      "ruleset_id": 10088322
+    },
+    {
+      "type": "non_fast_forward",
+      "ruleset_source_type": "Repository",
+      "ruleset_source": "eval-hub/eval-hub",
+      "ruleset_id": 10088322
+    },
+    {
+      "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews_on_push": true,
+        "required_reviewers": [],
+        "require_code_owner_review": true,
+        "dismissal_restriction": {
+          "enabled": false,
+          "allowed_actors": []
+        },
+        "require_last_push_approval": true,
+        "required_review_thread_resolution": true,
+        "require_extra_approval_for_unattributed_changes": true,
+        "allowed_merge_methods": [
+          "squash",
+          "rebase"
+        ]
+      },
+      "ruleset_source_type": "Repository",
+      "ruleset_source": "eval-hub/eval-hub",
+      "ruleset_id": 10088322
+    },
+    {
+      "type": "required_status_checks",
+      "parameters": {
+        "strict_required_status_checks_policy": true,
+        "do_not_enforce_on_create": true,
+        "required_status_checks": [
+          {
+            "context": "quality-checks",
+            "integration_id": 15368
+          },
+          {
+            "context": "Gosec Security Scanner",
+            "integration_id": 15368
+          },
+          {
+            "context": "gosec",
+            "integration_id": 57789
+          },
+          {
+            "context": "dependency-review",
+            "integration_id": 15368
+          },
+          {
+            "context": "CodeQL",
+            "integration_id": 57789
+          },
+          {
+            "context": "docker-build-check",
+            "integration_id": 15368
+          }
+        ]
+      },
+      "ruleset_source_type": "Repository",
+      "ruleset_source": "eval-hub/eval-hub",
+      "ruleset_id": 10088322
+    }
+  ]
+}

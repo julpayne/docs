@@ -1,0 +1,193 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1520" height="2180" viewBox="0 0 1520 2180" role="img" aria-labelledby="title desc">
+<title id="title">PRs to ODH images and RHOAI staged installer builds</title>
+<desc id="desc">Two upstream sources pass merge and synchronization gates, then split into ODH component builds and downstream RHOAI rebuilds, installer assembly, bundle, catalog and stage promotion. Dashed paths and question IDs identify unverified handoffs.</desc>
+<rect width="1520" height="2180" fill="#ffffff"/>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8" fill="#97a6b2"/></marker></defs>
+<text x="55" y="39" fill="#15212b" font-family="Arial, sans-serif" font-size="25" font-weight="700">PR → ODH images → RHOAI staged installer</text>
+<text x="55" y="68" fill="#52616c" font-family="Arial, sans-serif" font-size="15" font-weight="400">As of 19 Oct 2026 · Current development · RHOAI release example: rhoai-3.6</text>
+<text x="55" y="93" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Diamond = gate / selection step     Solid = verified configuration     Dashed + ? = open handoff / enforcement question</text>
+<text x="55" y="720" fill="#125b84" font-family="Arial, sans-serif" font-size="17" font-weight="700">ODH DEVELOPMENT IMAGES / INSTALLER CONTEXT</text>
+<text x="815" y="720" fill="#125b84" font-family="Arial, sans-serif" font-size="17" font-weight="700">RHOAI DEVELOPMENT → STAGED CATALOG</text>
+<path d="M 380.0 207 V 223.5 H 380.0 V 235" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 380.0 352 V 371.0 H 380.0 V 385" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 380.0 498 V 516.5 H 380.0 V 530" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 207 V 223.5 H 1140.0 V 235" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 352 V 371.0 H 1140.0 V 385" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 498 V 516.5 H 1140.0 V 530" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 380.0 637 V 675 H 380.0 V 745" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 637 V 675 H 380.0 V 745" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 380.0 637 V 689 H 1140.0 V 745" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<path d="M 1140.0 637 V 689 H 1140.0 V 745" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<path d="M 380.0 884 V 904.5 H 380.0 V 920" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 380.0 1033 V 1054.0 H 380.0 V 1070" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 380.0 1183 V 1204.0 H 380.0 V 1220" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 884 V 904.5 H 1140.0 V 920" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<path d="M 1140.0 1033 V 1054.0 H 1140.0 V 1070" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 1207 V 1228.5 H 1140.0 V 1245" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 1360 V 1380.0 H 1140.0 V 1395" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 1515 V 1535.0 H 1140.0 V 1550" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 1670 V 1690.0 H 1140.0 V 1705" fill="none" stroke="#97a6b2" stroke-width="1.7"  marker-end="url(#arrow)"/>
+<path d="M 1140.0 1820 V 1840.0 H 1140.0 V 1855" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<path d="M 1140.0 1985 V 2005.0 H 1140.0 V 2020" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<a href="https://github.com/eval-hub/eval-hub/blob/33605699cc4ec69796a9c570049663fc1011a8c0/.github/workflows/ci.yml" target="_blank"><g>
+<rect x="55" y="125" width="650" height="82" rx="6" fill="#ffffff" stroke="#125b84" stroke-width="1.4" />
+<text x="73" y="154" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">EvalHub PR → upstream main</text>
+<text x="73" y="180" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">eval-hub/eval-hub</text>
+</g></a>
+<a href="https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/.github/workflows/controller-tests.yaml" target="_blank"><g>
+<rect x="815" y="125" width="650" height="82" rx="6" fill="#ffffff" stroke="#125b84" stroke-width="1.4" />
+<text x="833" y="154" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">TrustyAI operator PR → upstream main</text>
+<text x="833" y="180" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">trustyai-explainability/trustyai-service-operator</text>
+</g></a>
+<a href="https://api.github.com/repos/eval-hub/eval-hub/rules/branches/main" target="_blank"><g>
+<rect x="55" y="240" width="650" height="112" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M74 256 L81 263 L74 270 L67 263 Z" fill="none" stroke="#97a6b2"/>
+<text x="89" y="269" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G1 · Required upstream merge gate</text>
+<text x="73" y="295" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">1 approval + CODEOWNERS + latest-push approval</text>
+<text x="73" y="318" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Required checks + resolved review threads; up-to-date branch</text>
+</g></a>
+<a href="https://github.com/trustyai-explainability/trustyai-service-operator/blob/2852260f01a31ce92ed6e95b88bc3031be77f3e3/.github/workflows/controller-tests.yaml" target="_blank"><g>
+<rect x="815" y="240" width="650" height="112" rx="6" fill="#ffffff" stroke="#946000" stroke-width="1.4" stroke-dasharray="6 4"/>
+<path d="M834 256 L841 263 L834 270 L827 263 Z" fill="none" stroke="#946000"/>
+<text x="849" y="269" fill="#946000" font-family="Arial, sans-serif" font-size="17" font-weight="700">G2 · Upstream CI / merge policy ? Q2</text>
+<text x="833" y="295" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Controller + module smoke / manifest checks; Prow</text>
+<text x="833" y="318" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Which checks and approvals are enforced remains open.</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/eval-hub/blob/ec8770ae040fa4e63f7585f572cc9f5e59dcde54/.github/workflows/sync-upstream.yml" target="_blank"><g>
+<rect x="55" y="390" width="650" height="108" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M74 406 L81 413 L74 420 L67 413 Z" fill="none" stroke="#97a6b2"/>
+<text x="89" y="419" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G3 · Sync PR → ODH main</text>
+<text x="73" y="445" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">opendatahub-io/eval-hub</text>
+<text x="73" y="468" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Hourly at :23 UTC / manual; conflicts fail; PR merge required</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/auto-merge-upstream-sync.yaml" target="_blank"><g>
+<rect x="815" y="390" width="650" height="108" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M834 406 L841 413 L834 420 L827 413 Z" fill="none" stroke="#97a6b2"/>
+<text x="849" y="419" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G4 · Upstream sync PR → ODH main</text>
+<text x="833" y="445" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">opendatahub-io/trustyai-service-operator</text>
+<text x="833" y="468" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Pull bot PR: auto-approve / enable auto-merge; cadence ?</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/eval-hub/blob/ec8770ae040fa4e63f7585f572cc9f5e59dcde54/.github/workflows/sync-main-to-stable.yml" target="_blank"><g>
+<rect x="55" y="535" width="650" height="102" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M74 551 L81 558 L74 565 L67 558 Z" fill="none" stroke="#97a6b2"/>
+<text x="89" y="564" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G5 · ODH main → stable sync PR</text>
+<text x="73" y="590" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Push to main / manual creates sync PR</text>
+<text x="73" y="613" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Gate: merge PR; resolve conflicts and destination requirements.</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/sync-branch-incubation.yaml" target="_blank"><g>
+<rect x="815" y="535" width="650" height="102" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M834 551 L841 558 L834 565 L827 558 Z" fill="none" stroke="#97a6b2"/>
+<text x="849" y="564" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G6 · ODH main → incubation → stable PRs</text>
+<text x="833" y="590" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">main push opens incubation PR; incubation push opens stable PR</text>
+<text x="833" y="613" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Module image has a separate main build (Q3).</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/eval-hub/blob/cdb42724ee4ea84991a9ea80c0639cac345b57a9/.tekton/eval-hub-push.yaml" target="_blank"><g>
+<rect x="55" y="750" width="650" height="134" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<text x="73" y="779" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">ODH component image builds</text>
+<text x="73" y="805" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">EvalHub stable → quay.io/opendatahub/odh-eval-hub</text>
+<text x="73" y="828" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Workload stable + module main → opendatahub operator images</text>
+<text x="73" y="851" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Tag: odh-stable; Konflux build / scan tasks (policy: Q4–Q5)</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml" target="_blank"><g>
+<rect x="815" y="750" width="650" height="134" rx="6" fill="#ffffff" stroke="#946000" stroke-width="1.4" stroke-dasharray="6 4"/>
+<path d="M834 766 L841 773 L834 780 L827 773 Z" fill="none" stroke="#946000"/>
+<text x="849" y="779" fill="#946000" font-family="Arial, sans-serif" font-size="17" font-weight="700">G7 · ODH → Red Hat source promotion ? Q1</text>
+<text x="833" y="805" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">red-hat-data-services/{eval-hub, trustyai-service-operator}</text>
+<text x="833" y="828" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Destination builds verified on rhoai-3.6</text>
+<text x="833" y="851" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Source branch / sync bot / cadence / approvals: OPEN</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.github/workflows/update-manifest-shas.yml" target="_blank"><g>
+<rect x="55" y="925" width="650" height="108" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M74 941 L81 948 L74 955 L67 948 Z" fill="none" stroke="#97a6b2"/>
+<text x="89" y="954" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G8 · Select manifests + immutable image digests</text>
+<text x="73" y="980" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Daily 06:00 UTC / manual manifest-update PR</text>
+<text x="73" y="1003" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Merge updated SHA / digest pins; eligibility policy ? Q4</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/eval-hub/blob/9ac639a44ec89a47fea82f376344264eec8b8fce/.github/workflows/post-codefreeze-gatekeeper.yaml" target="_blank"><g>
+<rect x="815" y="925" width="650" height="108" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M834 941 L841 948 L834 955 L827 948 Z" fill="none" stroke="#97a6b2"/>
+<text x="849" y="954" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G9 · Merge / backport into the release branch</text>
+<text x="833" y="980" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Branch-specific tests + approvals; freeze exceptions when enabled</text>
+<text x="833" y="1003" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">EA gatekeeper configured for 3.6-ea.1 / 3.6-ea.2</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.tekton/odh-operator-ci-push.yaml" target="_blank"><g>
+<rect x="55" y="1075" width="650" height="108" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<text x="73" y="1104" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">ODH installer operator build</text>
+<text x="73" y="1130" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">opendatahub-io/opendatahub-operator main push</text>
+<text x="73" y="1153" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Output: opendatahub-operator:odh-stable; path filters apply</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml" target="_blank"><g>
+<rect x="815" y="1075" width="650" height="132" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<text x="833" y="1104" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">RHOAI component image builds</text>
+<text x="833" y="1130" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Release-branch push → Konflux hermetic builds</text>
+<text x="833" y="1153" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">EvalHub + workload + module → quay.io/rhoai/*-rhel9</text>
+<text x="833" y="1176" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Four architectures; scans / attestations policy ? Q5</text>
+</g></a>
+<a href="https://github.com/opendatahub-io/ODH-Build-Config/blob/e9504048c67df9a2148b68a656407f38f34acc92/.tekton/odh-operator-bundle-ci-push.yaml" target="_blank"><g>
+<rect x="55" y="1225" width="650" height="126" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<text x="73" y="1254" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">ODH development bundle / catalog path</text>
+<text x="73" y="1280" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">ODH-Build-Config pins relatedImages; bundle build</text>
+<text x="73" y="1303" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Operator stable → bundle sync every 2h / manual</text>
+<text x="73" y="1326" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Bundle → catalog nudge; processor / policy details ? Q4–Q5</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/rhods-operator/blob/8e4548175331858f7ab3b883531d0c3509a15edd/.github/workflows/operator-insta-merge.yaml" target="_blank"><g>
+<rect x="815" y="1250" width="650" height="110" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M834 1266 L841 1273 L834 1280 L827 1273 Z" fill="none" stroke="#97a6b2"/>
+<text x="849" y="1279" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G10 · Component digest nudge PR → installer</text>
+<text x="833" y="1305" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">rhods-operator build/operator-nudging.yaml</text>
+<text x="833" y="1328" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Bot + one-file + title/version feasibility → auto-merge path</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/rhods-operator/blob/8e4548175331858f7ab3b883531d0c3509a15edd/.github/workflows/operator-processor.yaml" target="_blank"><g>
+<rect x="815" y="1400" width="650" height="115" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<text x="833" y="1429" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G11 · Assemble + build RHOAI installer operator</text>
+<text x="833" y="1455" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Processor: digests → operands map + source manifest metadata</text>
+<text x="833" y="1478" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Prefetch matching manifests; publish odh-rhel9-operator</text>
+<text x="833" y="1501" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Nightly/manual refresh is a separate route.</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/bundle-insta-merge.yaml" target="_blank"><g>
+<rect x="815" y="1555" width="650" height="115" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M834 1571 L841 1578 L834 1585 L827 1578 Z" fill="none" stroke="#97a6b2"/>
+<text x="849" y="1584" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G12 · Operator nudge → processed bundle / Helm</text>
+<text x="833" y="1610" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Bot / file / title checks → bundle nudge merge</text>
+<text x="833" y="1633" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Process CSV + relatedImages / Helm values, then build</text>
+<text x="833" y="1656" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">bundle-patch-only push is excluded from direct Tekton build.</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.tekton/odh-operator-bundle-v3-6-push.yaml" target="_blank"><g>
+<rect x="815" y="1710" width="650" height="110" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M834 1726 L841 1733 L834 1740 L827 1733 Z" fill="none" stroke="#97a6b2"/>
+<text x="849" y="1739" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G13 · Bundle digest → catalog processing → FBC build</text>
+<text x="833" y="1765" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">catalog/catalog-patch.yaml nudge; process catalog content</text>
+<text x="833" y="1788" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Refresh PCC + select bundle snapshot; build FBC fragment</text>
+<text x="833" y="1811" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Policy / integration-test enforcement remains Q5.</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/push-to-stage.yaml" target="_blank"><g>
+<rect x="815" y="1860" width="650" height="125" rx="6" fill="#ffffff" stroke="#946000" stroke-width="1.4" stroke-dasharray="6 4"/>
+<path d="M834 1876 L841 1883 L834 1890 L827 1883 Z" fill="none" stroke="#946000"/>
+<text x="849" y="1889" fill="#946000" font-family="Arial, sans-serif" font-size="17" font-weight="700">G14 · Promote selected FBC to stage ? Q5–Q6</text>
+<text x="833" y="1915" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Push To Stage: workflow_dispatch; select FBC / latest nightly</text>
+<text x="833" y="1938" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Validate signed-image presence + catalog/PCC data</text>
+<text x="833" y="1961" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">QE sign-off, release-policy binding and caller / cadence: OPEN</text>
+</g></a>
+<a href="https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/push-to-stage.yaml" target="_blank"><g>
+<rect x="815" y="2025" width="650" height="82" rx="6" fill="#ffffff" stroke="#125b84" stroke-width="1.4" />
+<text x="833" y="2054" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">QE-installable staged catalog</text>
+<text x="833" y="2080" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Built stage catalog → OLM bundle → installer / module / workloads</text>
+</g></a>
+<text x="55" y="1420" fill="#125b84" font-family="Arial, sans-serif" font-size="18" font-weight="700">OPEN QUESTIONS TO CLOSE</text>
+<text x="55" y="1460" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q1 · Who moves ODH code into the Red Hat forks?</text>
+<text x="55" y="1484" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Component maintainers / DevOps</text>
+<text x="55" y="1545" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q2 · Which TrustyAI tests actually block merges?</text>
+<text x="55" y="1569" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Repository / CI owners</text>
+<text x="55" y="1630" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q3 · Are module and workload images intentionally built from different branches?</text>
+<text x="55" y="1654" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">TrustyAI / ODH maintainers</text>
+<text x="55" y="1715" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q4 · What makes an image set eligible for installer selection?</text>
+<text x="55" y="1739" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Build / integration owners</text>
+<text x="55" y="1800" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q5 · Which QE / Enterprise Contract verdicts are mandatory?</text>
+<text x="55" y="1824" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">QE / Konflux / release engineering</text>
+<text x="55" y="1885" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q6 · Who triggers and approves promotion to the staged catalog?</text>
+<text x="55" y="1909" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Release engineering / QE</text>
+<text x="55" y="2010" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Evidence and detailed gate criteria: evidence.json / interactive diagram.</text>
+<text x="55" y="2036" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Community image publication is parallel to downstream RHEL rebuilds.</text>
+<text x="55" y="2062" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">An image in Quay is not yet an installer-selected image.</text>
+<text x="55" y="2138" fill="#52616c" font-family="Arial, sans-serif" font-size="13" font-weight="400">Source links are embedded in the diagram nodes. No release or promotion was triggered during this research.</text>
+</svg>
