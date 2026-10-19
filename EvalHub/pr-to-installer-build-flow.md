@@ -62,15 +62,27 @@ The [daily 06:00 UTC / manual manifest updater][manifest-update] opens a PR to u
 
 The [installer build][odh-installer] publishes `opendatahub-operator:odh-stable` and nudges bundle inputs. [Bundle Sync CI][odh-bundle-sync] also generates bundle content from installer `stable` every two hours or on manual dispatch. The [bundle build trigger][odh-bundle] excludes bundle-patch-only pushes and nudges catalog inputs after building. This ODH installer context is included to explain how image availability differs from installer selection; the complete live ODH catalog processor/policy chain was not audited.
 
-## 3. ODH source into RHOAI rebuilds and the staged installer
+## 3. Component source into Red Hat release builds and the staged installer
 
-**The ODH-to-Red Hat component sync is intentionally an open question (Q1).** The destination release builds exist; the source branch, intermediate branches, automation and approvals were not established. The diagram does not imply that ODH container images are copied into RHOAI.
+**The source flow is defined in central DevOps workflows**, outside the component repositories. [Upstream to Downstream][rh-upstream-sync] runs every four hours at minute 00 UTC and uses [upstream-source-map.yaml][rh-upstream-map]:
+
+- **EvalHub:** `opendatahub-io/eval-hub:main` → `red-hat-data-services/eval-hub:main`, with `automerge: yes`. This consumes ODH **main**, rather than ODH stable. A merged [manual sync PR #437][rh-eval-sync-pr] also corroborates these branches.
+- **TrustyAI:** `trustyai-explainability/trustyai-service-operator:main` → `red-hat-data-services/trustyai-service-operator:main`, with **`automerge: no`**. The current scheduled selector excludes this entry; merged [PR #2036][rh-operator-sync-pr] shows a manual sync directly from upstream. Do not infer an ODH stable → Red Hat path for this component.
+
+[Main to Release][rh-release-sync] runs every four hours at minute 30 UTC. Both components are enabled in its [source map][rh-release-map], and [releases.yaml][rh-sync-releases] currently selects `rhoai-3.6`. The [sync action][rh-release-logic] resolves the source from the repository default when no `src-branch` is provided; both defaults were observed as `main`. It merges and **pushes directly** from Red Hat `main` into `rhoai-3.6`, rather than creating a release PR. Conflicts outside excluded paths fail the action; exclusions preserve destination-specific content. The [upstream sync implementation][rh-upstream-logic] also merges/pushes directly for enabled entries. These operations still depend on destination rules and bot permissions; their effective bypass/enforcement policy remains Q1.
+
+**Red Hat `main → stable` is a parallel path.** The central [Main to Stable PR Creator][rh-stable-pr] runs daily at **00:30 UTC** or manually, uses [main-stable-source-map.yaml][rh-stable-map], and opens component sync PRs plus a GAP Leader PR. Merged bot PRs [EvalHub #438][rh-eval-stable-pr] and [TrustyAI #2038][rh-operator-stable-pr] corroborate this handoff. It is not configured as a prerequisite for `main → rhoai-3.6`. Source sync precedes separate RHOAI builds; it does not copy ODH container images.
 
 ```mermaid
 flowchart TB
-  ODH["ODH component source branches"] -.-> SYNC{"G7: downstream source sync? Q1<br/>source / bot / schedule / approvals OPEN"}
-  SYNC -.-> RELEASE["red-hat-data-services component release branches"]
-  RELEASE --> MERGE{"G9: release PR / backport gate<br/>branch tests + approvals; freeze exceptions where enabled"}
+  ODH["EvalHub: ODH main"] --> SYNC{"G7a: central upstream sync every 4h :00<br/>EvalHub enabled; TrustyAI automatic entry disabled"}
+  UPSTREAM["TrustyAI: upstream main"] --> MANUAL["Manual sync PR; observed in merged history"]
+  SYNC --> MAIN["Red Hat component main"]
+  MANUAL --> MAIN
+  MAIN --> RELEASESYNC{"G7b: central release sync every 4h :30<br/>merge + direct push; preserve excluded files"}
+  RELEASESYNC --> RELEASE["Red Hat rhoai-3.6 component branches"]
+  MAIN --> STABLEPR["Parallel: daily 00:30 UTC / manual<br/>main → stable component PRs + GAP Leader PR"]
+  RELEASE --> MERGE{"G9: destination branch policy / conflict resolution<br/>manual backports; freeze controls where applicable"}
   MERGE --> COMPONENTS["Separate Konflux hermetic RHEL builds<br/>EvalHub + workload operator + module operator<br/>quay.io/rhoai/*-rhel9"]
   COMPONENTS --> NUDGE{"G10: component digest nudge PR<br/>rhods-operator build/operator-nudging.yaml<br/>bot + single-file + title/version feasibility"}
   NUDGE --> ASSEMBLE["G11: Operator Processor<br/>digests / operands map + image source metadata<br/>prefetch manifests; commit processed content"]
@@ -130,7 +142,7 @@ flowchart TB
   P1 --> CM["Sync TrustyAI provider ConfigMaps<br/>add image variables/resources for new providers"]
   CHANGE -->|no| P2
   CM --> P2{"P2: select adapter reference in operator params<br/>base + ODH/RHOAI overlays; sync module manifests"}
-  P1 --> SERVICE["If service config changed: G3/G5 → G8<br/>downstream source handoff remains G7 / Q1"]
+  P1 --> SERVICE["If service config changed: G3/G5 → G8<br/>central downstream source sync: G7; controls Q1"]
   P2 --> OPERATOR["Operator PR: G2 → G4/G6 → G8<br/>RHOAI G7/G9–G14; adapter selection policy? Q8"]
   OPERATOR --> VERIFY["Installed provider config → Job image digest<br/>verify SDK, callbacks/results and target architecture"]
 ```
@@ -139,7 +151,7 @@ flowchart TB
 2. **C2 — Build and publish the affected images.** The [publisher][contrib-build] runs after `adapters/**` pushes to `main` or **`v*` branches**, or on manual dispatch. It detects adapters from the last commit, builds their Containerfiles and pushes `quay.io/evalhub/community-<adapter>:<commit-SHA>` plus `latest` on main or the branch name on release branches. A tag push is not this workflow's configured trigger. Root-only/workflow-only changes and a new SDK release do not automatically rebuild images; manually dispatch with the adapter name when needed. The [manual all-images workflow][contrib-build-all] uses an explicit matrix, so check coverage for new adapters. ToolEval also builds `toolbench-server`; `clear` publishes as `community-ibm-clear`. [RULER has an overlapping publisher][contrib-ruler] targeting the same tags (Q8). These publishers do not wait on test/security workflow results. Verify successful push, resolved digest, actual installed SDK/dependencies and target architecture; the configured Docker build has no explicit multi-platform matrix.
 3. **P1 — Reconcile provider definitions if changed.** Contrib's [provider.yaml][inspect-contrib-provider] and EvalHub's [config/providers YAML][inspect-service-provider] are distinct files; the inspected publisher does not synchronize them. Open a service PR for changed benchmark metadata/runtime fields and pass **G1**. Its [image-existence check][provider-image-check] skips newly added providers on PRs, then checks them on matching main pushes; image existence alone does not prove compatibility. The [ConfigMap drift workflow][config-sync] runs after main pushes, nightly at **02:00 UTC** and manually, rather than on PRs. Its [comparison][config-sync-logic] skips Kustomize image variables, so drift success does not prove the selected image version.
 4. **P2 — Select the image and update operator/module configuration.** In a TrustyAI PR, run [`hack/sync-evalhub-providers.sh <source-ref>`][provider-sync-script] when provider/collection definitions change and review the generated ConfigMaps. Follow the [operator sync guide][provider-sync-guide] for new providers: register image variables in [base kustomization][provider-image-vars], add [base][provider-base-images], [ODH][provider-odh-images] and [RHOAI][provider-rhoai-images] `params.env` entries, and update resources. For an image-only change, check/update the relevant existing selections without requiring an unrelated service config PR. Run [`hack/sync-trustyai-module-manifests.sh`][provider-module-sync] after config changes; it copies the config tree into `trustyai-operator-module/config/manifests-template`. Review both trees before merging through **G2**.
-5. **Join the existing promotion paths.** Service config changes follow **G3/G5**; operator manifests/image selections follow **G4/G6** and installer selection **G8**. For RHOAI, confirm the matching release branch and pass **G7/G9–G14**; **Q1 stays open** for source synchronization. The observed image selection is concrete: base uses `community-inspect:latest`, whereas upstream ODH/RHOAI overlays and the [downstream `rhoai-3.6` overlay][rh-provider-images] select `community-inspect:v0.6.12`. A new `latest` build does not update that pinned channel. Either build the chosen release branch/channel or deliberately update the selected reference; record the immutable digest because branch/channel tags can move. The [downstream provider ConfigMap][rh-inspect-provider] substitutes `$(evalhub-provider-inspect-image)` and its overlay references the community image. A separate RHEL adapter rebuild/nudge, mirroring and release eligibility must be established rather than inferred (**Q8**).
+5. **Join the existing promotion paths.** Service config changes follow **G3/G5**; operator manifests/image selections follow **G4/G6** and installer selection **G8**. For RHOAI, confirm the matching release branch and pass **G7/G9–G14**; **G7** now defines the central source flow; **Q1** remains open only for enforcement and recovery. The observed image selection is concrete: base uses `community-inspect:latest`, whereas upstream ODH/RHOAI overlays and the [downstream `rhoai-3.6` overlay][rh-provider-images] select `community-inspect:v0.6.12`. A new `latest` build does not update that pinned channel. Either build the chosen release branch/channel or deliberately update the selected reference; record the immutable digest because branch/channel tags can move. The [downstream provider ConfigMap][rh-inspect-provider] substitutes `$(evalhub-provider-inspect-image)` and its overlay references the community image. A separate RHEL adapter rebuild/nudge, mirroring and release eligibility must be established rather than inferred (**Q8**).
 6. **Verify the installed job.** Treat this as completion evidence for the change, not an already enforced CI requirement: inspect the rendered operator/module provider ConfigMap and resulting Kubernetes Job/Pod image digest; confirm the embedded SDK version, target architecture and service/sidecar callback/result compatibility with an actual evaluation. Provider ConfigMaps are [reconciled by the operator][rh-provider-reconcile]. A successful API submission or a new image in Quay alone does not prove the adapter update reached stage.
 
 **Completion evidence:** contrib merge/selected release commit → image digest and embedded SDK version → provider config commit if changed → selected operator overlay reference and module manifest commit → existing installer/bundle/FBC/stage chain → installed Job image digest and evaluation result. For clients, the SDK package version is sufficient to identify the update; for adapters, retain the whole image-selection chain.
@@ -188,11 +200,11 @@ Evidence: [opendatahub-io/trustyai-service-operator · .github/workflows/sync-br
 
 Open: Q3.
 
-### G7 · ODH → Red Hat source promotion ? Q1
+### G7 · Central source sync into Red Hat release branches
 
-The destination release PipelineRuns are verified. The ODH → Red Hat component synchronization mechanism and intermediate branch sequence have not been established. Do not treat this edge as an automatic promotion of ODH images: Red Hat performs a separate build from downstream source.
+Central rhods-devops-infra upstream-auto-merge runs at 0 */4 * * * UTC or manual dispatch. Its source map enables opendatahub-io/eval-hub main → red-hat-data-services/eval-hub main, preserving .tekton/* and global exclusions. The TrustyAI row instead points directly from trustyai-explainability main to Red Hat main and has automerge: no; it is excluded by the current scheduled selection. Merged PRs #437 (EvalHub) and #2036 (TrustyAI) corroborate those source branches and show manual sync PRs also occur. The separate main-release-auto-merge runs at 30 */4 * * * UTC; both component rows are enabled and releases.yaml currently lists rhoai-3.6. Its action resolves an unspecified source branch from the repository default, observed as main for both, then merges and pushes directly to the release branch. Main → stable is a separate daily 00:30 UTC PR/GAP path, not a configured prerequisite for main → rhoai-3.6. Q1 now concerns branch-policy enforcement, bypass permissions, conflict ownership and recovery rather than the source graph.
 
-Evidence: [red-hat-data-services/eval-hub · .tekton/odh-eval-hub-v3-6-push.yaml (rhoai-3.6)][rh-eval-build], [red-hat-data-services/trustyai-service-operator · .tekton/odh-trustyai-service-operator-v3-6-push.yaml (rhoai-3.6)][rh-workload-build].
+Evidence: [red-hat-data-services/rhods-devops-infra · .github/workflows/upstream-auto-merge.yaml (main)][rh-upstream-sync], [red-hat-data-services/rhods-devops-infra · src/config/upstream-source-map.yaml (main)][rh-upstream-map], [red-hat-data-services/sync-upstream-repo · entrypoint.sh (master)][rh-upstream-logic], [red-hat-data-services/rhods-devops-infra · .github/workflows/main-release-auto-merge.yaml (main)][rh-release-sync], [red-hat-data-services/rhods-devops-infra · src/config/main-release-source-map.yaml (main)][rh-release-map], [red-hat-data-services/rhods-devops-infra · src/config/releases.yaml (main)][rh-sync-releases], [red-hat-data-services/sync-git-branches · entrypoint.sh (main)][rh-release-logic], [red-hat-data-services/rhods-devops-infra · .github/workflows/main-stable-pr-creator.yaml (main)][rh-stable-pr], [red-hat-data-services/rhods-devops-infra · src/config/main-stable-source-map.yaml (main)][rh-stable-map], [red-hat-data-services/eval-hub #437 · ODH main → Red Hat main sync PR][rh-eval-sync-pr], [red-hat-data-services/trustyai-service-operator #2036 · upstream main → Red Hat main sync PR][rh-operator-sync-pr].
 
 Open: Q1.
 
@@ -204,11 +216,11 @@ Evidence: [opendatahub-io/opendatahub-operator · .github/workflows/update-manif
 
 Open: Q3, Q4.
 
-### G9 · Merge / backport into the release branch
+### G9 · Accept a release update / backport
 
-Push builds run after code reaches the release branch. The inspected main gatekeeper definition calls shared post-codefreeze logic for two EA branches; confirm its deployed status, required label/approval policy, and branch coverage. Do not assume the EA gate applies to every development branch.
+The central release sync action merges the selected source and pushes directly to the release branch; it does not create a release PR. Successful pushes still depend on credentials and destination branch policy. Non-excluded merge conflicts fail the action; excluded files are restored from the destination. Manual PR/backport paths also exist. The inspected gatekeeper calls shared post-codefreeze logic for two EA branches; confirm effective required checks, bot bypass permissions and branch coverage rather than assuming every development update passes a release PR or an EA gate.
 
-Evidence: [red-hat-data-services/eval-hub · .github/workflows/post-codefreeze-gatekeeper.yaml (main)][rh-freeze], [red-hat-data-services/eval-hub · .tekton/odh-eval-hub-v3-6-push.yaml (rhoai-3.6)][rh-eval-build], [red-hat-data-services/trustyai-service-operator · .tekton/odh-trustyai-service-operator-v3-6-push.yaml (rhoai-3.6)][rh-workload-build].
+Evidence: [red-hat-data-services/rhods-devops-infra · .github/workflows/main-release-auto-merge.yaml (main)][rh-release-sync], [red-hat-data-services/sync-git-branches · entrypoint.sh (main)][rh-release-logic], [red-hat-data-services/eval-hub · .github/workflows/post-codefreeze-gatekeeper.yaml (main)][rh-freeze], [red-hat-data-services/eval-hub · .tekton/odh-eval-hub-v3-6-push.yaml (rhoai-3.6)][rh-eval-build], [red-hat-data-services/trustyai-service-operator · .tekton/odh-trustyai-service-operator-v3-6-push.yaml (rhoai-3.6)][rh-workload-build].
 
 Open: Q1, Q2.
 
@@ -304,15 +316,15 @@ Open: Q8.
 
 ## Open questions
 
-These are gaps in the evidence, not claims that controls are absent. Q1 stays open as requested.
+These are remaining evidence gaps, not claims that controls are absent. Q1 is narrowed to sync enforcement and recovery; the configured source flow is established in section 3.
 
-### Q1. Who moves ODH code into the Red Hat forks?
+### Q1. Which source-sync controls and recovery rules remain unverified?
 
-Keep open: identify the exact source branch, target branch, bot/configuration, schedule, conflict owner, approvals, and backport rules for each component. Do stable → downstream main → rhoai-3.6 actually apply to both?
+The central source maps, schedules, actions and merged PRs establish the source flow: EvalHub ODH main → Red Hat main; TrustyAI upstream main → Red Hat main with automatic upstream sync disabled; both Red Hat main → rhoai-3.6. Main → stable is a parallel PR/GAP path. Remaining questions: which destination rules and bot bypass permissions apply to direct pushes, who resolves non-excluded conflicts or missing changes, and how changes to exclusion lists are reconciled. The configured flow is established; per-component run success and complete source equivalence were not audited.
 
 Suggested owner: **Component maintainers / DevOps**.
 
-Evidence: [opendatahub-io/eval-hub · .github/workflows/sync-main-to-stable.yml (main)][eval-stable], [opendatahub-io/trustyai-service-operator · .github/workflows/sync-branch-stable.yaml (main)][operator-stable], [red-hat-data-services/eval-hub · .tekton/odh-eval-hub-v3-6-push.yaml (rhoai-3.6)][rh-eval-build], [red-hat-data-services/trustyai-service-operator · .tekton/odh-trustyai-service-operator-v3-6-push.yaml (rhoai-3.6)][rh-workload-build].
+Evidence: [red-hat-data-services/rhods-devops-infra · .github/workflows/upstream-auto-merge.yaml (main)][rh-upstream-sync], [red-hat-data-services/rhods-devops-infra · src/config/upstream-source-map.yaml (main)][rh-upstream-map], [red-hat-data-services/rhods-devops-infra · .github/workflows/main-release-auto-merge.yaml (main)][rh-release-sync], [red-hat-data-services/rhods-devops-infra · src/config/main-release-source-map.yaml (main)][rh-release-map], [red-hat-data-services/sync-git-branches · entrypoint.sh (main)][rh-release-logic], [red-hat-data-services/rhods-devops-infra · .github/workflows/main-stable-pr-creator.yaml (main)][rh-stable-pr].
 
 ### Q2. Which TrustyAI tests actually block merges?
 
@@ -380,9 +392,9 @@ For SDK/contrib updates, also record the SDK release/version → contrib depende
 
 ## Evidence boundaries and maintenance
 
-Source-file links below are pinned to commits resolved during this investigation. The structured evidence retains the branch URLs for following current development. The GitHub branch-rules API is a live endpoint; its observed response is saved in `evidence.json` and may differ from today's response. Bypass actors, live Konflux resources, deployed IntegrationTestScenarios, successful workflow runs and QE verdicts were not audited.
+Source-file links below are pinned to commits resolved during this investigation. The structured evidence retains the branch URLs for following current development. The GitHub branch-rules API is a live endpoint; its observed response is saved in `evidence.json` and may differ from today's response. Bypass actors, live Konflux resources, deployed IntegrationTestScenarios, per-component successful sync/build runs and QE verdicts were not audited. Merged sync PRs were inspected to corroborate source branches. Central actions are referenced through mutable branches; their inspected snapshots do not prove the action commit used by every past run.
 
-Update the diagrams, gate descriptions and structured evidence together when a handoff is confirmed. In particular, replace dashed Q1 and stage edges only after the corresponding mechanism and mandatory controls are identified.
+Update the diagrams, gate descriptions and structured evidence together when a handoff is confirmed. In particular, keep the central sync mappings/schedules current and retain dashed stage edges until mandatory promotion controls are identified.
 
 <details>
 <summary>Full diagram snapshot</summary>
@@ -471,3 +483,18 @@ Update the diagrams, gate descriptions and structured evidence together when a h
 [rh-provider-images]: https://github.com/red-hat-data-services/trustyai-service-operator/blob/718760309b309fb4c20b99cbee59bd21ada77796/config/overlays/rhoai/params.env
 [sdk-rules]: https://api.github.com/repos/eval-hub/eval-hub-sdk/rules/branches/main
 [contrib-rules]: https://api.github.com/repos/eval-hub/eval-hub-contrib/rules/branches/main
+[rh-upstream-sync]: https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/.github/workflows/upstream-auto-merge.yaml
+[rh-release-sync]: https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/.github/workflows/main-release-auto-merge.yaml
+[rh-upstream-map]: https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/src/config/upstream-source-map.yaml
+[rh-stable-map]: https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/src/config/main-stable-source-map.yaml
+[rh-release-map]: https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/src/config/main-release-source-map.yaml
+[rh-sync-releases]: https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/src/config/releases.yaml
+[rh-stable-pr]: https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/.github/workflows/main-stable-pr-creator.yaml
+[rh-release-action]: https://github.com/red-hat-data-services/sync-git-branches/blob/298d4dd40bd3eca83d0c2edbee17e21f90994788/action.yml
+[rh-release-logic]: https://github.com/red-hat-data-services/sync-git-branches/blob/298d4dd40bd3eca83d0c2edbee17e21f90994788/entrypoint.sh
+[rh-upstream-action]: https://github.com/red-hat-data-services/sync-upstream-repo/blob/16c01e481879a06648a4d6dad7abd14d50c89ee0/action.yml
+[rh-upstream-logic]: https://github.com/red-hat-data-services/sync-upstream-repo/blob/16c01e481879a06648a4d6dad7abd14d50c89ee0/entrypoint.sh
+[rh-eval-sync-pr]: https://github.com/red-hat-data-services/eval-hub/pull/437
+[rh-operator-sync-pr]: https://github.com/red-hat-data-services/trustyai-service-operator/pull/2036
+[rh-eval-stable-pr]: https://github.com/red-hat-data-services/eval-hub/pull/438
+[rh-operator-stable-pr]: https://github.com/red-hat-data-services/trustyai-service-operator/pull/2038

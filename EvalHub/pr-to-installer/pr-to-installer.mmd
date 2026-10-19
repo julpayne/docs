@@ -18,9 +18,9 @@ flowchart TB
   eval_promote["G5 · ODH main → stable sync PR<br/>Push to main / manual creates sync PR<br/>Gate: merge PR; resolve conflicts and destination requirements."]
   operator_promote["G6 · ODH main → incubation → stable PRs<br/>main push opens incubation PR; incubation push opens stable PR<br/>Module image has a separate main build (Q3)."]
   odh_images["ODH component image builds<br/>EvalHub stable → quay.io/opendatahub/odh-eval-hub<br/>Workload stable + module main → opendatahub operator images<br/>Tag: odh-stable; Konflux build / scan tasks (policy: Q4–Q5)"]
-  rh_sync["G7 · ODH → Red Hat source promotion ? Q1<br/>red-hat-data-services/{eval-hub, trustyai-service-operator}<br/>Destination builds verified on rhoai-3.6<br/>Source branch / sync bot / cadence / approvals: OPEN"]
+  rh_sync["G7 · Central source sync into Red Hat release branches<br/>EvalHub: ODH main → RH main; 4-hour automatic sync<br/>TrustyAI: upstream main → RH main; auto off, manual PRs<br/>Both: RH main → rhoai-3.6 every 4h :30; stable is parallel"]
   odh_select["G8 · Select manifests + immutable image digests<br/>Daily 06:00 UTC / manual manifest-update PR<br/>Merge updated SHA / digest pins; eligibility policy ? Q4"]
-  rh_freeze["G9 · Merge / backport into the release branch<br/>Branch-specific tests + approvals; freeze exceptions when enabled<br/>EA gatekeeper configured for 3.6-ea.1 / 3.6-ea.2"]
+  rh_freeze["G9 · Accept a release update / backport<br/>Central sync merges/pushes directly; conflicts and branch policy apply<br/>Manual sync / cherry-pick PRs are additional paths<br/>EA gatekeeper coverage / effective bypass policy remain open"]
   odh_installer["ODH installer operator build<br/>opendatahub-io/opendatahub-operator main push<br/>Output: opendatahub-operator:odh-stable; path filters apply"]
   rh_images["RHOAI component image builds<br/>Release-branch push → Konflux hermetic builds<br/>EvalHub + workload + module → quay.io/rhoai/*-rhel9<br/>Four architectures; scans / attestations policy ? Q5"]
   odh_bundle["ODH development bundle / catalog path<br/>ODH-Build-Config pins relatedImages; bundle build<br/>Operator stable → bundle sync every 2h / manual<br/>Bundle → catalog nudge; processor / policy details ? Q4–Q5"]
@@ -49,12 +49,12 @@ flowchart TB
   operator_fork --> operator_promote
   eval_promote -->|stable builds| odh_images
   operator_promote -->|workload stable / module main| odh_images
-  eval_promote -.->|downstream source handoff| rh_sync
-  operator_promote -.->|downstream source handoff| rh_sync
+  eval_fork -->|ODH main| rh_sync
+  operator_gate -->|direct upstream main; manual PR| rh_sync
   odh_images --> odh_select
   odh_select --> odh_installer
   odh_installer --> odh_bundle
-  rh_sync -.-> rh_freeze
+  rh_sync --> rh_freeze
   rh_freeze --> rh_images
   rh_images --> rh_nudge
   rh_nudge --> rh_installer
@@ -80,9 +80,9 @@ flowchart TB
   click eval_promote "https://github.com/opendatahub-io/eval-hub/blob/ec8770ae040fa4e63f7585f572cc9f5e59dcde54/.github/workflows/sync-main-to-stable.yml" "Source" _blank
   click operator_promote "https://github.com/opendatahub-io/trustyai-service-operator/blob/c517af62634a2c388df406994dede74f3ca95398/.github/workflows/sync-branch-incubation.yaml" "Source" _blank
   click odh_images "https://github.com/opendatahub-io/eval-hub/blob/cdb42724ee4ea84991a9ea80c0639cac345b57a9/.tekton/eval-hub-push.yaml" "Source" _blank
-  click rh_sync "https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml" "Source" _blank
+  click rh_sync "https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/.github/workflows/upstream-auto-merge.yaml" "Source" _blank
   click odh_select "https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.github/workflows/update-manifest-shas.yml" "Source" _blank
-  click rh_freeze "https://github.com/red-hat-data-services/eval-hub/blob/9ac639a44ec89a47fea82f376344264eec8b8fce/.github/workflows/post-codefreeze-gatekeeper.yaml" "Source" _blank
+  click rh_freeze "https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/.github/workflows/main-release-auto-merge.yaml" "Source" _blank
   click odh_installer "https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.tekton/odh-operator-ci-push.yaml" "Source" _blank
   click rh_images "https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml" "Source" _blank
   click odh_bundle "https://github.com/opendatahub-io/ODH-Build-Config/blob/e9504048c67df9a2148b68a656407f38f34acc92/.tekton/odh-operator-bundle-ci-push.yaml" "Source" _blank
@@ -93,4 +93,4 @@ flowchart TB
   click rh_stage "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/push-to-stage.yaml" "Source" _blank
   click stage_output "https://github.com/red-hat-data-services/RHOAI-Build-Config/blob/3e9b401f59351d58d938699d90e6f1a0e2a3dac8/.github/workflows/push-to-stage.yaml" "Source" _blank
   classDef unknown fill:#fff8e8,stroke:#946000,stroke-dasharray:6 4,color:#15212b
-  class operator_gate,rh_sync,rh_stage unknown
+  class operator_gate,rh_stage unknown

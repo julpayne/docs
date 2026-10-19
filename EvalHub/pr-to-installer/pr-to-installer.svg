@@ -41,13 +41,13 @@
 <path d="M 1140.0 1618 V 1636.5 H 1140.0 V 1650" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 380.0 1757 V 1795 H 380.0 V 1865" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 1140.0 1757 V 1795 H 380.0 V 1865" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
-<path d="M 380.0 1757 V 1809 H 1140.0 V 1865" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
-<path d="M 1140.0 1757 V 1809 H 1140.0 V 1865" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
+<path d="M 705 1564.0 H 755 V 1788 H 1140.0 V 1865" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
+<path d="M 1465 1416.0 H 1490 V 1808 H 1140.0 V 1865" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 380.0 2004 V 2024.5 H 380.0 V 2040" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 380.0 2153 V 2174.0 H 380.0 V 2190" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 380.0 2303 V 2324.0 H 380.0 V 2340" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
-<path d="M 1140.0 2004 V 2024.5 H 1140.0 V 2040" fill="none" stroke="#97a6b2" stroke-width="1.7" stroke-dasharray="6 5" marker-end="url(#arrow)"/>
-<path d="M 1140.0 2153 V 2174.0 H 1140.0 V 2190" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
+<path d="M 1140.0 2004 V 2024.5 H 1140.0 V 2040" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
+<path d="M 1140.0 2161 V 2178.0 H 1140.0 V 2190" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 1140.0 2327 V 2348.5 H 1140.0 V 2365" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 1140.0 2480 V 2500.0 H 1140.0 V 2515" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
 <path d="M 1140.0 2635 V 2655.0 H 1140.0 V 2670" fill="none" stroke="#97a6b2" stroke-width="1.7" marker-end="url(#arrow)"/>
@@ -195,14 +195,14 @@
 <text x="73" y="1948" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Workload stable + module main → opendatahub operator images</text>
 <text x="73" y="1971" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Tag: odh-stable; Konflux build / scan tasks (policy: Q4–Q5)</text>
 </g></a>
-<a href="https://github.com/red-hat-data-services/eval-hub/blob/999680fab061e6d4dfb97e1d558e6cdbd4d7a40b/.tekton/odh-eval-hub-v3-6-push.yaml" target="_blank"><g>
-<title>The destination release PipelineRuns are verified. The ODH → Red Hat component synchronization mechanism and intermediate branch sequence have not been established. Do not treat this edge as an automatic promotion of ODH images: Red Hat performs a separate build from downstream source.</title>
-<rect x="815" y="1870" width="650" height="134" rx="6" fill="#ffffff" stroke="#946000" stroke-width="1.4" stroke-dasharray="6 4"/>
-<path d="M834 1886 L841 1893 L834 1900 L827 1893 Z" fill="none" stroke="#946000"/>
-<text x="849" y="1899" fill="#946000" font-family="Arial, sans-serif" font-size="17" font-weight="700">G7 · ODH → Red Hat source promotion ? Q1</text>
-<text x="833" y="1925" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">red-hat-data-services/{eval-hub, trustyai-service-operator}</text>
-<text x="833" y="1948" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Destination builds verified on rhoai-3.6</text>
-<text x="833" y="1971" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Source branch / sync bot / cadence / approvals: OPEN</text>
+<a href="https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/.github/workflows/upstream-auto-merge.yaml" target="_blank"><g>
+<title>Central rhods-devops-infra upstream-auto-merge runs at 0 */4 * * * UTC or manual dispatch. Its source map enables opendatahub-io/eval-hub main → red-hat-data-services/eval-hub main, preserving .tekton/* and global exclusions. The TrustyAI row instead points directly from trustyai-explainability main to Red Hat main and has automerge: no; it is excluded by the current scheduled selection. Merged PRs #437 (EvalHub) and #2036 (TrustyAI) corroborate those source branches and show manual sync PRs also occur. The separate main-release-auto-merge runs at 30 */4 * * * UTC; both component rows are enabled and releases.yaml currently lists rhoai-3.6. Its action resolves an unspecified source branch from the repository default, observed as main for both, then merges and pushes directly to the release branch. Main → stable is a separate daily 00:30 UTC PR/GAP path, not a configured prerequisite for main → rhoai-3.6. Q1 now concerns branch-policy enforcement, bypass permissions, conflict ownership and recovery rather than the source graph.</title>
+<rect x="815" y="1870" width="650" height="134" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<path d="M834 1886 L841 1893 L834 1900 L827 1893 Z" fill="none" stroke="#97a6b2"/>
+<text x="849" y="1899" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G7 · Central source sync into Red Hat release branches</text>
+<text x="833" y="1925" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">EvalHub: ODH main → RH main; 4-hour automatic sync</text>
+<text x="833" y="1948" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">TrustyAI: upstream main → RH main; auto off, manual PRs</text>
+<text x="833" y="1971" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Both: RH main → rhoai-3.6 every 4h :30; stable is parallel</text>
 </g></a>
 <a href="https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.github/workflows/update-manifest-shas.yml" target="_blank"><g>
 <title>ODH Update Manifest SHAs runs make update-refs-shas and resolves image digests when updates are needed, opening a PR. Failed component fetches add do-not-merge and fail the workflow. manifests-config.yaml pins TrustyAI module manifests from ODH main and keeps explicit image digests. Build Config separately lists selected relatedImages. These configurations can lag independently; atomicity was not established.</title>
@@ -212,13 +212,14 @@
 <text x="73" y="2100" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Daily 06:00 UTC / manual manifest-update PR</text>
 <text x="73" y="2123" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Merge updated SHA / digest pins; eligibility policy ? Q4</text>
 </g></a>
-<a href="https://github.com/red-hat-data-services/eval-hub/blob/9ac639a44ec89a47fea82f376344264eec8b8fce/.github/workflows/post-codefreeze-gatekeeper.yaml" target="_blank"><g>
-<title>Push builds run after code reaches the release branch. The inspected main gatekeeper definition calls shared post-codefreeze logic for two EA branches; confirm its deployed status, required label/approval policy, and branch coverage. Do not assume the EA gate applies to every development branch.</title>
-<rect x="815" y="2045" width="650" height="108" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
+<a href="https://github.com/red-hat-data-services/rhods-devops-infra/blob/6762fef380abaaec18c76158c3fed63c0af19447/.github/workflows/main-release-auto-merge.yaml" target="_blank"><g>
+<title>The central release sync action merges the selected source and pushes directly to the release branch; it does not create a release PR. Successful pushes still depend on credentials and destination branch policy. Non-excluded merge conflicts fail the action; excluded files are restored from the destination. Manual PR/backport paths also exist. The inspected gatekeeper calls shared post-codefreeze logic for two EA branches; confirm effective required checks, bot bypass permissions and branch coverage rather than assuming every development update passes a release PR or an EA gate.</title>
+<rect x="815" y="2045" width="650" height="116" rx="6" fill="#ffffff" stroke="#97a6b2" stroke-width="1.4" />
 <path d="M834 2061 L841 2068 L834 2075 L827 2068 Z" fill="none" stroke="#97a6b2"/>
-<text x="849" y="2074" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G9 · Merge / backport into the release branch</text>
-<text x="833" y="2100" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Branch-specific tests + approvals; freeze exceptions when enabled</text>
-<text x="833" y="2123" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">EA gatekeeper configured for 3.6-ea.1 / 3.6-ea.2</text>
+<text x="849" y="2074" fill="#15212b" font-family="Arial, sans-serif" font-size="17" font-weight="700">G9 · Accept a release update / backport</text>
+<text x="833" y="2100" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Central sync merges/pushes directly; conflicts and branch policy apply</text>
+<text x="833" y="2123" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Manual sync / cherry-pick PRs are additional paths</text>
+<text x="833" y="2146" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">EA gatekeeper coverage / effective bypass policy remain open</text>
 </g></a>
 <a href="https://github.com/opendatahub-io/opendatahub-operator/blob/e1445db9585f25aed5f8bb54db13dc2f6ce6b45d/.tekton/odh-operator-ci-push.yaml" target="_blank"><g>
 <title>The checked-in CI push pipeline builds Dockerfiles/rhoai.Dockerfile with BUILD_TYPE=CI via multi-arch-operator-build.yaml and nudges bundle/bundle-patch.yaml. A component image existing in Quay does not itself update this source build.</title>
@@ -293,7 +294,7 @@
 <text x="833" y="3200" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Built stage catalog → OLM bundle → installer / module / workloads</text>
 </g></a>
 <text x="55" y="2540" fill="#125b84" font-family="Arial, sans-serif" font-size="18" font-weight="700">OPEN QUESTIONS TO CLOSE</text>
-<text x="55" y="2580" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q1 · Who moves ODH code into the Red Hat forks?</text>
+<text x="55" y="2580" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q1 · Which source-sync controls and recovery rules remain unverified?</text>
 <text x="55" y="2604" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Component maintainers / DevOps</text>
 <text x="55" y="2665" fill="#946000" font-family="Arial, sans-serif" font-size="16" font-weight="700">Q2 · Which TrustyAI tests actually block merges?</text>
 <text x="55" y="2689" fill="#52616c" font-family="Arial, sans-serif" font-size="14" font-weight="400">Repository / CI owners</text>
