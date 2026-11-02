@@ -27,4 +27,5 @@ Podman image builds/loading, scoped deployment, smoke checks and cleanup.
 [![rhoai-3.6-ea.1](https://img.shields.io/badge/rhoai--3.6--ea.1-v3.14.0-0194E2)](https://github.com/red-hat-data-services/mlflow-operator/blob/rhoai-3.6-ea.1/config/component_metadata.yaml)
 [![rhoai-3.6-ea.2](https://img.shields.io/badge/rhoai--3.6--ea.2-v3.15.2-0194E2)](https://github.com/red-hat-data-services/mlflow-operator/blob/rhoai-3.6-ea.2/config/component_metadata.yaml)
 [![rhoai-3.6](https://img.shields.io/badge/rhoai--3.6-v3.17.0-0194E2)](https://github.com/red-hat-data-services/mlflow-operator/blob/rhoai-3.6/config/component_metadata.yaml)
+[![rhoai-3.7-ea.1](https://img.shields.io/badge/rhoai--3.7--ea.1-v3.17.0-0194E2)](https://github.com/red-hat-data-services/mlflow-operator/blob/rhoai-3.7-ea.1/config/component_metadata.yaml)
 <!-- mlflow-badges:end -->
